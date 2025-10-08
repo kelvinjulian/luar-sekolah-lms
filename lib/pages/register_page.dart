@@ -18,7 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   // =========================
-  // TEXT EDITING CONTROLLER: buat ambil inputan dari user di setiap field
+  //* TEXT EDITING CONTROLLER: buat ambil inputan dari user di setiap field
   // =========================
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -26,7 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController passwordController = TextEditingController();
 
   // =========================
-  // VARIABLE STATE: semua yang ada di sini akan merubah UI kalau di-setState
+  //* VARIABLE STATE: semua yang ada di sini akan merubah UI kalau di-setState
   // =========================
   bool isPasswordVisible =
       false; // buat toggle icon mata (lihat/sembunyikan password)
@@ -46,10 +46,10 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isPasswordHasSymbol = false; // cek apakah ada simbol
 
   // =========================
-  // FUNGSI UTILITY & VALIDASI
+  //* FUNGSI UTILITY & VALIDASI
   // =========================
 
-  // Fungsi ini dipanggil setiap kali user ngetik di salah satu field.
+  //? Fungsi ini dipanggil setiap kali user ngetik di salah satu field.
   // Dia cuma ngecek, semua field udah ada isinya apa belum.
   void checkFormFilled() {
     setState(() {
@@ -61,7 +61,7 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
-  // Logika validasi untuk Email
+  //? Logika validasi untuk Email
   void validateEmail(String value) {
     // Ekspresi reguler (RegExp) buat ngecek format email yang bener
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
@@ -73,7 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
     checkFormFilled(); // Jangan lupa cek lagi apakah semua field sudah terisi
   }
 
-  // Logika validasi untuk Nomor Telepon
+  //? Logika validasi untuk Nomor Telepon
   void validatePhone(String value) {
     setState(() {
       isPhoneValid62 = value.startsWith('62');
@@ -84,7 +84,7 @@ class _RegisterPageState extends State<RegisterPage> {
     checkFormFilled();
   }
 
-  // Logika validasi untuk Password
+  //? Logika validasi untuk Password
   void validatePassword(String value) {
     setState(() {
       isPasswordMinLength = value.length >= 8;
@@ -99,9 +99,8 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   // =========================
-  // LIFECYCLE METHODS
+  //* LIFECYCLE METHODS
   // =========================
-
   @override
   void initState() {
     super.initState();
@@ -124,7 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
+  //? Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
   Widget checklistItem(bool condition, String text) {
     return Row(
       children: [
@@ -147,7 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   // =========================
-  // BUILD METHOD (INI TEMPAT UI DIBUAT)
+  //* BUILD METHOD (INI TEMPAT UI DIBUAT)
   // =========================
   @override
   Widget build(BuildContext context) {
@@ -181,7 +180,9 @@ class _RegisterPageState extends State<RegisterPage> {
         children: [
           const SizedBox(height: 40),
 
-          // Logo aplikasi rata kiri
+          // =========================
+          //* LOGO DI POJOK KIRI
+          // =========================
           Align(
             alignment: Alignment.centerLeft,
             child: SvgPicture.asset(
@@ -192,7 +193,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
           const SizedBox(height: 20),
 
-          // Judul Utama Halaman
+          // =========================
+          //* JUDUL DAN DESKRIPSI
+          // =========================
           Text(
             "Daftarkan Akun Untuk Lanjut Akses ke Luarsekolah",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -203,7 +206,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
           const SizedBox(height: 15),
 
-          // Deskripsi singkat
           Text(
             "Satu akun untuk akses Luarsekolah dan BelajarBekerja",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -217,7 +219,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 20),
 
           // =========================
-          // TOMBOL DAFTAR DENGAN GOOGLE
+          //* TOMBOL DAFTAR DENGAN GOOGLE
           // =========================
           SizedBox(
             width: double.infinity, // bikin tombol full width
@@ -251,7 +253,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 15),
 
           // =========================
-          // DIVIDER "atau gunakan email"
+          //* DIVIDER "atau gunakan email"
           // =========================
           Row(
             children: [
@@ -283,7 +285,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 20),
 
           // =========================
-          // FORM UTAMA
+          //* FORM UTAMA
           // =========================
           Form(
             key: _formKey, // Pasang GlobalKey di sini!
@@ -291,7 +293,7 @@ class _RegisterPageState extends State<RegisterPage> {
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
               children: [
-                // Nama Lengkap
+                //? Nama Lengkap
                 InputField(
                   label: "Nama Lengkap",
                   controller: nameController,
@@ -306,7 +308,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 15),
 
-                // Email
+                //? Email
                 InputField(
                   label: "Email Aktif",
                   controller: emailController,
@@ -340,7 +342,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Jarak antar field
                 const SizedBox(height: 15),
 
-                // Nomor WhatsApp
+                //? Nomor WhatsApp
                 InputField(
                   label: "Nomor WhatsApp Aktif",
                   controller: phoneController,
@@ -368,7 +370,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Jarak antar field
                 const SizedBox(height: 15),
 
-                // Password
+                //? Password
                 InputField(
                   label: "Password",
                   controller: passwordController,
@@ -423,7 +425,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
 
           // =========================
-          // "I'M NOT A ROBOT" CHECKBOX
+          //* "I'M NOT A ROBOT" CHECKBOX
           // =========================
           GestureDetector(
             onTap: () {
@@ -456,7 +458,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
           const SizedBox(height: 25),
 
-          // Tombol Utama "Daftarkan Akun"
+          // =========================
+          //* TOMBOL "Daftarkan Akun" DINAMIS
+          // =========================
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -493,7 +497,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 20),
 
           // =========================
-          // TEXT SYARAT DAN KETENTUAN
+          //* TEXT SYARAT DAN KETENTUAN
           // =========================
           RichText(
             text: TextSpan(
@@ -521,7 +525,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 25),
 
           // =========================
-          // LINK PINDAH KE LOGIN
+          //* LINK PINDAH KE LOGIN
           // =========================
           Center(
             child: Container(
