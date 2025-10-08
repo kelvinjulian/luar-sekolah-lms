@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Buat pakai gambar SVG (seperti logo Google atau logo aplikasi)
 
-// Import widget InputField
+// Import widget custom InputField kita
 import '../widgets/input_field.dart';
-import 'register_page.dart';
-import 'home_page.dart';
+import 'register_page.dart'; // Import halaman Register, buat kalau user mau daftar
+import 'home_page.dart'; // Import halaman Home, buat kalau login sukses
 
 /// ================================
-/// HALAMAN REGISTER
+/// HALAMAN LOGIN
 /// ================================
+// Widget utama kita, dia Stateful karena isinya bisa berubah-ubah (misalnya saat ngetik)
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -16,66 +17,130 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+// Ini adalah State dari LoginPage, tempat semua logika dan data disimpan
 class _LoginPageState extends State<LoginPage> {
+  // GlobalKey ini penting banget buat mengakses dan nge-validasi Form-nya
+  final _formKey = GlobalKey<FormState>();
+
   // =========================
-  // CONTROLLER UNTUK TEXTFIELD
+  // CONTROLLER UNTUK TEXTFIELD: buat ambil inputan dari user
   // =========================
-  // final TextEditingController nameController = TextEditingController();
-  // final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   // =========================
-  // VARIABLE STATE
+  // VARIABLE STATE: semua yang ada di sini akan merubah UI kalau di-setState
   // =========================
-  bool isPasswordVisible = false; // toggle visibility password
-  bool isRobotChecked = false; // apakah checkbox "I'm not a robot" dicentang
-  bool isFormFilled = false; // apakah semua field sudah diisi
+  bool isPasswordVisible =
+      false; // buat toggle icon mata (lihat/sembunyikan password)
+  bool isRobotChecked = false; // status checkbox "I'm not a robot"
+  bool isFormFilled = false; // buat ngecek apakah semua field sudah terisi
 
-  @override
-  void initState() {
-    super.initState();
+  // Validasi real-time: status untuk setiap kriteria validasi (hanya dipakai di sini untuk mengecek status tombol)
+  bool isEmailValid = false; // cek format email (@, .com, dll)
+  bool isEmailRegistered =
+      false; // cek apakah email ini terdaftar (di login, harusnya terdaftar)
+  bool isPasswordMinLength = false; // cek apakah minimal 8 karakter
+  bool isPasswordHasUppercase = false; // cek apakah ada huruf kapital
+  bool isPasswordHasNumber = false; // cek apakah ada angka
+  bool isPasswordHasSymbol = false; // cek apakah ada simbol
 
-    // =========================
-    // ADD LISTENER UNTUK MEMANTAU TEXTFIELD
-    // =========================
-    // Setiap kali user mengetik di salah satu field, jalankan fungsi checkFormFilled
-    // nameController.addListener(checkFormFilled);
-    // phoneController.addListener(checkFormFilled);
-    emailController.addListener(checkFormFilled);
-    passwordController.addListener(checkFormFilled);
-  }
-
-  // =========================
-  // FUNGSI UNTUK CEK FORM
-  // =========================
+  // Fungsi ini dipanggil setiap kali user ngetik. Ngecek apakah Email & Password terisi.
   void checkFormFilled() {
-    // Jika semua field tidak kosong, set isFormFilled menjadi true
     setState(() {
       isFormFilled =
-          // nameController.text.isNotEmpty &&
-          // phoneController.text.isNotEmpty &&
           emailController.text.isNotEmpty && passwordController.text.isNotEmpty;
     });
   }
 
+  // Logika validasi untuk Email
+  void validateEmail(String value) {
+    // Ekspresi reguler (RegExp) buat ngecek format email yang bener
+    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
+    setState(() {
+      isEmailValid = emailRegex.hasMatch(value); // Update status format
+      // Ini cuma contoh mocking. Di Login, ini harusnya dicek ke server apakah emailnya ADA.
+      isEmailRegistered = value == "ahmad@gmail.com";
+    });
+    checkFormFilled(); // Jangan lupa cek lagi apakah semua field sudah terisi
+  }
+
+  // Logika validasi untuk Password (meski login, kita tetap bisa cek apakah password memenuhi kriteria pendaftaran)
+  void validatePassword(String value) {
+    setState(() {
+      isPasswordMinLength = value.length >= 8;
+      isPasswordHasUppercase = value.contains(RegExp(r'[A-Z]'));
+      isPasswordHasNumber = value.contains(RegExp(r'[0-9]'));
+      isPasswordHasSymbol = value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
+    });
+    checkFormFilled();
+  }
+
+  // =========================
+  // LIFECYCLE METHODS
+  // =========================
+
+  @override
+  void initState() {
+    super.initState();
+    // Kita "dengarkan" setiap controller agar bisa update status isFormFilled
+    emailController.addListener(checkFormFilled);
+    passwordController.addListener(checkFormFilled);
+  }
+
   @override
   void dispose() {
-    // Jangan lupa dispose controller untuk mencegah memory leak
-    // nameController.dispose();
-    // phoneController.dispose();
+    // Kalau widget-nya hilang dari layar, controllernya harus dibersihkan
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
+  // Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
+  Widget checklistItem(bool condition, String text) {
+    return Row(
+      children: [
+        Icon(
+          condition ? Icons.check_circle : Icons.error,
+          color: condition ? Colors.green : Colors.red,
+          size: 18,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            color: condition ? Colors.green : Colors.red,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================
+  // BUILD METHOD (INI TEMPAT UI DIBUAT)
+  // =========================
   @override
   Widget build(BuildContext context) {
-    // Tombol "Daftarkan Akun" akan aktif jika semua field diisi AND checkbox dicentang
-    bool isButtonActive = isFormFilled && isRobotChecked;
+    // Perhitungan status Email: harus valid format DAN TERDAFTAR (karena ini halaman login)
+    bool isEmailValidFull = isEmailValid && isEmailRegistered;
+
+    // Status validasi penuh untuk Password (harus memenuhi 4 kriteria pendaftaran, agar tombol aktif)
+    bool isPasswordValidFull =
+        isPasswordMinLength &&
+        isPasswordHasUppercase &&
+        isPasswordHasNumber &&
+        isPasswordHasSymbol;
+
+    // Status apakah SEMUA kriteria validasi field sudah terpenuhi
+    bool isAllCriteriaMet = isEmailValidFull && isPasswordValidFull;
+
+    // Tombol aktif HANYA JIKA form terisi, robot dicentang, DAN semua kriteria validasi terpenuhi
+    bool isButtonActive = isFormFilled && isRobotChecked && isAllCriteriaMet;
 
     return Scaffold(
       body: ListView(
+        // ListView agar bisa di-scroll
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 40),
@@ -86,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
           Align(
             alignment: Alignment.centerLeft,
             child: SvgPicture.asset(
-              "assets/logos/luarsekolah-logo.svg", // untuk menggunakan SVG harus import flutter_svg package di pubspec.yaml
+              "assets/logos/luarsekolah-logo.svg",
               height: 48,
             ),
           ),
@@ -96,9 +161,8 @@ class _LoginPageState extends State<LoginPage> {
           // JUDUL DAN DESKRIPSI
           // =========================
           Text(
-            "Masuk ke Akunmu untuk Lanjut Akses ke Luarsekolah",
+            "Masuk ke Akunmu untuk Lanjut Akses ke Luarsekolah", // Judul utama
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              // pakai google fonts be vietnam pro yang sudah di set di main.dart
               fontSize: 22,
               fontWeight: FontWeight.w600,
             ),
@@ -106,30 +170,23 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 15),
 
           Text(
-            "Satu akun untuk akses Luarsekolah dan BelajarBekerja",
+            "Satu akun untuk akses Luarsekolah dan BelajarBekerja", // Deskripsi
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              // pakai google fonts be vietnam pro yang sudah di set di main.dart
-              // ini untuk deskripsi, jadi lebih kecil dan lebih tipis
               fontSize: 16,
               fontWeight: FontWeight.w100,
-              color: const Color(0xFF7B7F95),
+              color: const Color(0xFF7B7F95), // Warna abu-abu
             ),
           ),
           const SizedBox(height: 20),
 
           // =========================
-          // TOMBOL GOOGLE
+          // TOMBOL LOGIN DENGAN GOOGLE
           // =========================
           SizedBox(
-            // membungkus tombol agar bisa full width
-            width: double.infinity, // selebar mungkin
+            width: double.infinity, // Bikin tombol full width
             child: ElevatedButton.icon(
-              // tombol dengan icon
               style: ElevatedButton.styleFrom(
-                // menggunakan styleFrom agar mudah settingnya
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                ), // tinggi tombol 10
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black87,
                 side: const BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
@@ -137,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              onPressed: () {}, // belum ada fungsinya
+              onPressed: () {}, // Aksi login Google belum ada
               icon: SvgPicture.asset(
                 "assets/icons/google-icon.svg",
                 height: 20,
@@ -155,23 +212,19 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 15),
 
           // =========================
-          // DIVIDER ATAU GUNAKAN EMAIL
+          // DIVIDER "atau gunakan email"
           // =========================
           Row(
             children: [
               const Expanded(
-                // agar Divider selebar mungkin
                 child: Divider(
                   color: Color(0xFF7B7F95),
                   thickness: 1,
-                ), // garis pembatas
+                ), // Garis kiri
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                ), // jarak kiri kanan
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  // teks di tengah
                   "atau gunakan email",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
@@ -181,62 +234,124 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const Expanded(
-                // agar Divider selebar mungkin
                 child: Divider(
                   color: Color(0xFF7B7F95),
                   thickness: 1,
-                ), // garis pembatas
+                ), // Garis kanan
               ),
             ],
           ),
           const SizedBox(height: 20),
 
           // =========================
-          // FORM FIELD MENGGUNAKAN WIDGET InputField
+          // FORM FIELD
           // =========================
+          Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode
+                .onUserInteraction, // Validasi langsung saat interaksi
+            child: Column(
+              children: [
+                // Email
+                InputField(
+                  label: "Email Aktif",
+                  controller: emailController,
+                  hint: "Masukkan alamat emailmu",
+                  onChanged: validateEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email tidak boleh kosong';
+                    }
+                    // Kalau ada isinya, balikin null. Detail error dihandle checklist!
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 5),
+                // Checklist Email HANYA muncul ketika user sudah ngetik DAN formatnya BELUM valid
+                if (emailController.text.isNotEmpty && !isEmailValid)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      checklistItem(
+                        isEmailValid,
+                        "Format tidak sesuai. Contoh:\nuser@mail.com",
+                      ),
+                      // Kalau mau cek terdaftar/tidak terdaftar, bisa ditambahkan di sini
+                    ],
+                  ),
 
-          // Email
-          InputField(
-            // gunakan widget InputField yang sudah dibuat di widgets/input_field.dart
-            label: "Email Aktif",
-            controller:
-                emailController, // controller untuk mengontrol isi TextField
-            hint: "Masukkan email terdaftar",
-            minLines: 1, // kegunaan untuk multiline
-            maxLines: 2, // kegunaannya untuk jika user punya nama panjang
-          ),
+                // Jarak antar field
+                const SizedBox(height: 15),
 
-          const SizedBox(height: 15),
+                // Password
+                InputField(
+                  label: "Password",
+                  controller: passwordController,
+                  hint: "Masukkan password",
+                  obscureText: !isPasswordVisible,
+                  onChanged: validatePassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password tidak boleh kosong';
+                    }
+                    return null; // Detail error dihandle pesan ringkas di bawah
+                  },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      // Icon mata
+                      isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        isPasswordVisible =
+                            !isPasswordVisible; // Toggle visibilitas
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 5),
 
-          // Password
-          InputField(
-            label: "Password",
-            controller: passwordController,
-            hint: "Masukkan password untuk akunmu",
-            obscureText: !isPasswordVisible,
-            suffixIcon: IconButton(
-              icon: Icon(
-                isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-              ),
-              onPressed: () {
-                setState(() {
-                  isPasswordVisible = !isPasswordVisible;
-                });
-              },
-            ),
-          ),
+                // Pesan Ringkas Password (muncul jika ada teks TAPI tidak valid)
+                if (passwordController.text.isNotEmpty && !isPasswordValidFull)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Password tidak valid.", // Pesan umum saat password tidak memenuhi kriteria
+                          style: TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
 
-          const SizedBox(height: 10),
+                // Jarak ke link "Lupa password?"
+                const SizedBox(height: 5),
 
-          // Lupa Password
-          Text(
-            "Lupa password?",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-              color: Color(0xFF5b94f0),
-              decoration: TextDecoration.underline,
-              decorationColor: Color(0xFF5b94f0),
+                // Link "Lupa password?"
+                Align(
+                  alignment: Alignment.centerLeft, // Paksa teks rata kiri
+                  child: Text(
+                    "Lupa password?",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                      color: const Color(0xFF5b94f0),
+                      decoration: TextDecoration.underline,
+                      decorationColor: const Color(0xFF5b94f0),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -246,15 +361,13 @@ class _LoginPageState extends State<LoginPage> {
           // "I'M NOT A ROBOT" CHECKBOX
           // =========================
           GestureDetector(
-            // agar bisa ditekan
             onTap: () {
+              // Toggle status checkbox
               setState(() {
-                isRobotChecked =
-                    !isRobotChecked; // ketika area ini ditekan, toggle isRobotChecked
+                isRobotChecked = !isRobotChecked;
               });
             },
             child: Container(
-              // membungkus checkbox dan teks agar bisa ditekan
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
@@ -266,12 +379,7 @@ class _LoginPageState extends State<LoginPage> {
                     isRobotChecked
                         ? Icons.check_box
                         : Icons.check_box_outline_blank,
-                    // icon berubah sesuai isRobotChecked
-                    // jika true maka icon check_box, jika false maka icon check_box_outline_blank
-                    color: isRobotChecked
-                        ? Colors.green
-                        : Colors
-                              .grey, // warna icon berubah sesuai isRobotChecked, jika dicentang hijau, jika tidak abu-abu
+                    color: isRobotChecked ? Colors.green : Colors.grey,
                   ),
                   const SizedBox(width: 8),
                   const Text("I'm not a robot"),
@@ -283,61 +391,56 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 25),
 
           // =========================
-          // TOMBOL "DAFTARKAN AKUN" DINAMIS
+          // TOMBOL "MASUK" DINAMIS
           // =========================
           SizedBox(
-            // membungkus tombol agar bisa full
-            width: double.infinity, // selebar mungkin
+            width: double.infinity,
             child: ElevatedButton(
-              // tombol tanpa icon
+              // Tombol aktif HANYA JIKA isButtonActive true
+              onPressed: isButtonActive
+                  ? () {
+                      // Cek validasi form terakhir kali sebelum lanjut
+                      if (_formKey.currentState!.validate()) {
+                        // Kalau sukses, pindah ke halaman Home
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HomePage(),
+                          ),
+                        );
+                      }
+                    }
+                  : null, // Kalau tidak aktif, tombol disable
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor:
-                    isButtonActive // jika aktif hijau, jika tidak abu-abu
+                // Warna tombol: hijau kalau aktif, abu-abu kalau tidak
+                backgroundColor: isButtonActive
                     ? const Color(0xFF077d60)
                     : Colors.grey,
-                foregroundColor: Colors.white, // warna teks putih
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6), // radius 6
+                  borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              onPressed:
-                  isButtonActive // jika tombol aktif, maka onPressed ada isinya, jika tidak maka onPressed null
-                  ? () {
-                      // Navigasi ke halaman Homepage
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const HomePage(), // ganti dengan halaman home yang sebenarnya
-                        ),
-                      );
-                    }
-                  : null,
-              child: const Text("Masuk"),
+              child: const Text("Masuk"), // Teks tombol
             ),
           ),
 
           const SizedBox(height: 40),
 
           // =========================
-          // LINK LOGIN
+          // LINK PINDAH KE DAFTAR (REGISTER)
           // =========================
           Center(
-            // agar teks di tengah
             child: Container(
-              // membungkus agar bisa kasih padding dan box decoration (agar mirip tombol tapi bukan tombol)
-              padding: const EdgeInsets.symmetric(
-                horizontal: 34, // menyesuaikan agar sama dengan TextField
-                vertical: 18,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 18),
               decoration: BoxDecoration(
-                color: const Color(0xFFeff5ff), // background
+                color: const Color(0xFFeff5ff),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF5b94f0)), // outline
+                border: Border.all(color: const Color(0xFF5b94f0)),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.min, // Biar kotaknya se-lebar isinya
                 children: [
                   const Text("👋 ", style: TextStyle(fontSize: 15)),
                   const Text(
@@ -345,13 +448,12 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(fontSize: 15),
                   ),
                   GestureDetector(
-                    // agar bisa ditekan
                     onTap: () {
+                      // Pindah ke halaman Register
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const RegisterPage(), // ganti dengan halaman register yang sebenarnya
+                          builder: (context) => const RegisterPage(),
                         ),
                       );
                     },
