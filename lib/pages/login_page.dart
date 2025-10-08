@@ -7,9 +7,9 @@ import 'register_page.dart'; // Import halaman Register, buat kalau user mau daf
 import 'home_page.dart'; // Import halaman Home, buat kalau login sukses
 
 /// ================================
-/// HALAMAN LOGIN
+///* HALAMAN LOGIN
 /// ================================
-// Widget utama kita, dia Stateful karena isinya bisa berubah-ubah (misalnya saat ngetik)
+//? Widget utama kita, dia Stateful karena isinya bisa berubah-ubah (misalnya saat ngetik)
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -17,19 +17,19 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-// Ini adalah State dari LoginPage, tempat semua logika dan data disimpan
+//? Ini adalah State dari LoginPage, tempat semua logika dan data disimpan
 class _LoginPageState extends State<LoginPage> {
   // GlobalKey ini penting banget buat mengakses dan nge-validasi Form-nya
   final _formKey = GlobalKey<FormState>();
 
   // =========================
-  // CONTROLLER UNTUK TEXTFIELD: buat ambil inputan dari user
+  //* CONTROLLER UNTUK TEXTFIELD: buat ambil inputan dari user
   // =========================
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   // =========================
-  // VARIABLE STATE: semua yang ada di sini akan merubah UI kalau di-setState
+  //* VARIABLE STATE: semua yang ada di sini akan merubah UI kalau di-setState
   // =========================
   bool isPasswordVisible =
       false; // buat toggle icon mata (lihat/sembunyikan password)
@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
   bool isPasswordHasNumber = false; // cek apakah ada angka
   bool isPasswordHasSymbol = false; // cek apakah ada simbol
 
-  // Fungsi ini dipanggil setiap kali user ngetik. Ngecek apakah Email & Password terisi.
+  //? Fungsi ini dipanggil setiap kali user ngetik. Ngecek apakah Email & Password terisi.
   void checkFormFilled() {
     setState(() {
       isFormFilled =
@@ -53,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // Logika validasi untuk Email
+  //? Logika validasi untuk Email
   void validateEmail(String value) {
     // Ekspresi reguler (RegExp) buat ngecek format email yang bener
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
     checkFormFilled(); // Jangan lupa cek lagi apakah semua field sudah terisi
   }
 
-  // Logika validasi untuk Password (meski login, kita tetap bisa cek apakah password memenuhi kriteria pendaftaran)
+  //? Logika validasi untuk Password (meski login, kita tetap bisa cek apakah password memenuhi kriteria pendaftaran)
   void validatePassword(String value) {
     setState(() {
       isPasswordMinLength = value.length >= 8;
@@ -77,9 +77,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // =========================
-  // LIFECYCLE METHODS
+  //* LIFECYCLE METHODS
   // =========================
-
   @override
   void initState() {
     super.initState();
@@ -96,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
+  //? Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
   Widget checklistItem(bool condition, String text) {
     return Row(
       children: [
@@ -118,11 +117,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // =========================
-  // BUILD METHOD (INI TEMPAT UI DIBUAT)
+  //* BUILD METHOD (INI TEMPAT UI DIBUAT)
   // =========================
   @override
   Widget build(BuildContext context) {
-    // Perhitungan status Email: harus valid format DAN TERDAFTAR (karena ini halaman login)
+    //! Perhitungan status Email: harus valid format DAN TERDAFTAR (karena ini halaman login)
+    //! bisa kita coba ganti jadi !isEmailRegistered untuk simulasi email tidak terdaftar
     bool isEmailValidFull = isEmailValid && isEmailRegistered;
 
     // Status validasi penuh untuk Password (harus memenuhi 4 kriteria pendaftaran, agar tombol aktif)
@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 40),
 
           // =========================
-          // LOGO DI POJOK KIRI
+          //* LOGO DI POJOK KIRI
           // =========================
           Align(
             alignment: Alignment.centerLeft,
@@ -155,10 +155,11 @@ class _LoginPageState extends State<LoginPage> {
               height: 48,
             ),
           ),
+
           const SizedBox(height: 20),
 
           // =========================
-          // JUDUL DAN DESKRIPSI
+          //* JUDUL DAN DESKRIPSI
           // =========================
           Text(
             "Masuk ke Akunmu untuk Lanjut Akses ke Luarsekolah", // Judul utama
@@ -167,6 +168,7 @@ class _LoginPageState extends State<LoginPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
+
           const SizedBox(height: 15),
 
           Text(
@@ -180,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 20),
 
           // =========================
-          // TOMBOL LOGIN DENGAN GOOGLE
+          //* TOMBOL LOGIN DENGAN GOOGLE
           // =========================
           SizedBox(
             width: double.infinity, // Bikin tombol full width
@@ -212,7 +214,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 15),
 
           // =========================
-          // DIVIDER "atau gunakan email"
+          //* DIVIDER "atau gunakan email"
           // =========================
           Row(
             children: [
@@ -244,7 +246,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 20),
 
           // =========================
-          // FORM FIELD
+          //* FORM FIELD
           // =========================
           Form(
             key: _formKey,
@@ -252,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                 .onUserInteraction, // Validasi langsung saat interaksi
             child: Column(
               children: [
-                // Email
+                //* Email
                 InputField(
                   label: "Email Aktif",
                   controller: emailController,
@@ -268,7 +270,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 5),
-                // Checklist Email HANYA muncul ketika user sudah ngetik DAN formatnya BELUM valid
+                //? Checklist Email HANYA muncul ketika user sudah ngetik DAN formatnya BELUM valid
                 if (emailController.text.isNotEmpty && !isEmailValid)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                 // Jarak antar field
                 const SizedBox(height: 15),
 
-                // Password
+                //* Password
                 InputField(
                   label: "Password",
                   controller: passwordController,
@@ -313,8 +315,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 5),
-
-                // Pesan Ringkas Password (muncul jika ada teks TAPI tidak valid)
+                //? Pesan Ringkas Password (muncul jika ada teks TAPI tidak valid)
                 if (passwordController.text.isNotEmpty && !isPasswordValidFull)
                   Padding(
                     padding: const EdgeInsets.only(top: 5),
@@ -333,11 +334,9 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                   ),
-
                 // Jarak ke link "Lupa password?"
                 const SizedBox(height: 5),
-
-                // Link "Lupa password?"
+                //? Link "Lupa password?"
                 Align(
                   alignment: Alignment.centerLeft, // Paksa teks rata kiri
                   child: Text(
@@ -358,7 +357,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 25),
 
           // =========================
-          // "I'M NOT A ROBOT" CHECKBOX
+          //* "I'M NOT A ROBOT" CHECKBOX
           // =========================
           GestureDetector(
             onTap: () {
@@ -391,7 +390,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 25),
 
           // =========================
-          // TOMBOL "MASUK" DINAMIS
+          //* TOMBOL "MASUK" DINAMIS
           // =========================
           SizedBox(
             width: double.infinity,
@@ -429,7 +428,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 40),
 
           // =========================
-          // LINK PINDAH KE DAFTAR (REGISTER)
+          //* LINK PINDAH KE DAFTAR (REGISTER)
           // =========================
           Center(
             child: Container(
