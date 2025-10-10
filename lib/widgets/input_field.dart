@@ -62,6 +62,7 @@ class InputField extends StatelessWidget {
         // ----------------------------
         //* FIELD INPUT UTAMA (TextFormField)
         // ----------------------------
+        // ubah jadi TextFormField supaya bisa pakai validator
         TextFormField(
           controller: controller, // Pasang controller kita
           obscureText: obscureText, // Sembunyikan teks kalau ini true

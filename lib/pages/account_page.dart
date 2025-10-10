@@ -51,10 +51,10 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   // =====================================
-  // FUNGSI SHAREDPREFERENCES & LOGIKA
+  //* FUNGSI SHAREDPREFERENCES & LOGIKA
   // =====================================
 
-  // Fungsi untuk memuat data dari SharedPreferences
+  //? Fungsi untuk memuat data dari SharedPreferences
   void _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance(); // Ambil storage
     setState(() {
@@ -68,7 +68,7 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
-  // Fungsi untuk menyimpan perubahan data ke SharedPreferences saat tombol ditekan
+  //? Fungsi untuk menyimpan perubahan data ke SharedPreferences saat tombol ditekan
   void _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     // Simpan semua nilai state dan controller
@@ -78,8 +78,7 @@ class _AccountPageState extends State<AccountPage> {
     await prefs.setString('profile_gender', _gender);
     await prefs.setString('profile_job', _jobStatus);
 
-    // Tampilkan notifikasi keberhasilan di bagian atas layar (Snac kBar)
-
+    //? Tampilkan notifikasi keberhasilan di bagian atas layar (SnackBar)
     // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -106,7 +105,7 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  // Fungsi untuk memunculkan kalender (Date Picker)
+  //? Fungsi untuk memunculkan kalender (Date Picker)
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -136,7 +135,7 @@ class _AccountPageState extends State<AccountPage> {
             // Header Profil Statis
             const SizedBox(height: 20),
 
-            // === BARIS ATAS: FOTO KECIL + TEKS SAPAAN ===
+            //* === BARIS ATAS: FOTO KECIL + TEKS SAPAAN ===
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -170,7 +169,7 @@ class _AccountPageState extends State<AccountPage> {
 
             const SizedBox(height: 18),
 
-            // Tombol Buka Navigasi Menu
+            //? Tombol Buka Navigasi Menu
             SizedBox(
               width: double.infinity, // Full width
               child: OutlinedButton.icon(
@@ -192,7 +191,7 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 30),
 
             // =========================
-            // BAGIAN EDIT PROFIL (FOTO)
+            //* BAGIAN EDIT PROFIL (FOTO)
             // =========================
             const Text(
               "Edit Profil",
@@ -200,7 +199,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 15),
 
-            // Avatar BESAR dan Tombol Upload (Masih placeholder)
+            //? Avatar BESAR dan Tombol Upload (Masih placeholder)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -271,7 +270,7 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 40),
 
             // =========================
-            // SUB-HEADER: DATA DIRI (Form)
+            //* SUB-HEADER: DATA DIRI (Form)
             // =========================
             const Text(
               "Informasi Kontak",
@@ -279,7 +278,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 15),
 
-            // 1. Nama Lengkap (pakai label bawaan InputField)
+            //? 1. Nama Lengkap (pakai label bawaan InputField)
             InputField(
               label: "Nama Lengkap",
               controller: nameController,
@@ -290,7 +289,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 20),
 
-            // 2. Tanggal Lahir (pakai label terpisah + GestureDetector untuk kalender)
+            //? 2. Tanggal Lahir (pakai label terpisah + GestureDetector untuk kalender)
             InputLabel(label: "Tanggal Lahir"), // Label terpisah
             const SizedBox(height: 8), // Jarak manual yang sudah kita setting
             GestureDetector(
@@ -311,7 +310,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 20),
 
-            // 3. Jenis Kelamin (pakai Dropdown custom)
+            //? 3. Jenis Kelamin (pakai Dropdown custom)
             InputLabel(label: "Jenis Kelamin"),
             const SizedBox(height: 8), // Jarak manual
             CustomDropdown(
@@ -325,7 +324,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 20),
 
-            // 4. Status Pekerjaan (pakai Dropdown custom)
+            //? 4. Status Pekerjaan (pakai Dropdown custom)
             InputLabel(label: "Status Pekerjaan"),
             const SizedBox(height: 8), // Jarak manual
             CustomDropdown(
@@ -339,7 +338,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 20),
 
-            // 5. Alamat Lengkap (pakai InputField dengan multi-baris)
+            //? 5. Alamat Lengkap (pakai InputField dengan multi-baris)
             InputField(
               label: "Alamat Lengkap",
               controller: addressController,
@@ -349,7 +348,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             const SizedBox(height: 30),
 
-            // Tombol Simpan Perubahan
+            //? Tombol Simpan Perubahan
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

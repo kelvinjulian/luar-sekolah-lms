@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 // Kita pisahkan biar styling label di semua halaman jadi seragam dan rapi.
 class InputLabel extends StatelessWidget {
   // =========================
-  // PROPERTI (Cuma butuh 1: Teks Label)
+  //* PROPERTI (Cuma butuh 1: Teks Label)
   // =========================
   final String label; // Teks yang akan ditampilkan sebagai label (Wajib diisi!)
 

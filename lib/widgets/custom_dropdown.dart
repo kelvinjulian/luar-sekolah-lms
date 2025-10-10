@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 // Kita buat sendiri agar kotak dan styling-nya selalu sama dengan InputField lainnya.
 class CustomDropdown extends StatelessWidget {
   // =========================
-  // PROPERTI (Apa yang dibutuhkan widget ini dari luar)
+  //* PROPERTI (Apa yang dibutuhkan widget ini dari luar)
   // =========================
   final String value; // Nilai yang sedang terpilih saat ini
   final List<String> options; // Daftar semua pilihan yang tersedia

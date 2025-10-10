@@ -321,11 +321,7 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.only(top: 5),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Colors.red,
-                          size: 18,
-                        ),
+                        const Icon(Icons.error, color: Colors.red, size: 18),
                         const SizedBox(width: 6),
                         Text(
                           "Password tidak valid.", // Pesan umum saat password tidak memenuhi kriteria

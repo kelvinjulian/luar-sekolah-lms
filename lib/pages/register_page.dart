@@ -14,7 +14,7 @@ class RegisterPage extends StatefulWidget {
 
 // Ini adalah State dari RegisterPage, tempat semua logika dan data disimpan
 class _RegisterPageState extends State<RegisterPage> {
-  // GlobalKey ini penting banget buat mengakses dan nge-validasi Form-nya
+  //? GlobalKey ini penting buat mengakses dan nge-validasi Form-nya
   final _formKey = GlobalKey<FormState>();
 
   // =========================
