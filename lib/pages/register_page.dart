@@ -68,7 +68,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() {
       isEmailValid = emailRegex.hasMatch(value); // Update status format
       // Ini cuma contoh, aslinya harusnya cek ke server
-      isEmailRegistered = value == "test@example.com";
+      isEmailRegistered = value == "ahmad@gmail.com";
     });
     checkFormFilled(); // Jangan lupa cek lagi apakah semua field sudah terisi
   }
@@ -326,16 +326,29 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 const SizedBox(height: 5),
-                // Checklist Email HANYA muncul ketika user sudah ngetik DAN formatnya BELUM valid
-                if (emailController.text.isNotEmpty && !isEmailValid)
+                // Mengontrol kapan seluruh checklist muncul
+                if (emailController.text.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      checklistItem(
-                        isEmailValid,
-                        "Format tidak sesuai. Contoh:\nuser@mail.com",
-                      ),
-                      // checklistItem untuk cek terdaftar tidak ditampilkan sekarang
+                      // 1. Cek Format (DIMODIFIKASI)
+                      // Pesan ini HANYA muncul jika:
+                      //    1. Format TIDAK valid, ATAU
+                      //    2. Format valid, TAPI belum terdaftar (agar ikon hijau muncul)
+                      //    3. DAN, emailnya BELUM terdaftar (!isEmailRegistered)
+                      if (!isEmailRegistered) // KONDISI BARU: Sembunyikan jika sudah terdaftar
+                        checklistItem(
+                          isEmailValid,
+                          "Format tidak sesuai. Contoh:\nuser@mail.com",
+                        ),
+
+                      // 2. Cek Status Terdaftar
+                      // Pesan ini HANYA tampil jika Emailnya BENAR-BENAR terdaftar
+                      if (isEmailRegistered)
+                        checklistItem(
+                          !isEmailRegistered, // Kondisi ini pasti FALSE, sehingga tampil MERAH
+                          "Email ini sudah terdaftar. Silakan masuk.",
+                        ),
                     ],
                   ),
 
