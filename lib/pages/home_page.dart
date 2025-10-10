@@ -44,7 +44,7 @@ class _MainContentWidgetState extends State<MainContentWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Ingat! Widget ini hanya isinya Body, dia tidak pakai Scaffold lagi
+    //! Ingat! Widget ini hanya isinya Body, dia tidak pakai Scaffold lagi
     return Column(
       children: [
         // ----------------------------
@@ -56,7 +56,7 @@ class _MainContentWidgetState extends State<MainContentWidget> {
             mainAxisAlignment:
                 MainAxisAlignment.spaceBetween, // Rata kiri dan kanan
             children: [
-              // Kiri: avatar + teks sapaan
+              //? Kiri: avatar + teks sapaan
               Row(
                 children: [
                   const CircleAvatar(
@@ -213,7 +213,6 @@ class _MainContentWidgetState extends State<MainContentWidget> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
-
                 SizedBox(
                   height: 250,
                   child: ListView(
@@ -264,7 +263,6 @@ class _MainContentWidgetState extends State<MainContentWidget> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
-
                 SizedBox(
                   height: 220,
                   child: ListView(
@@ -285,6 +283,20 @@ class _MainContentWidgetState extends State<MainContentWidget> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      foregroundColor: tagBlue,
+                    ),
+                    child: const Text("Lihat Semua"),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -305,6 +317,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+//! jadi alur perpindahan halamannya:
+// 1. awalnya index 0 (Beranda) aktif, tampilkan MainContentWidget
+// 2. kalau user klik tab Akun (index 4), ganti _selected
+// index jadi 4, otomatis body ganti ke AccountPage
 class _HomePageState extends State<HomePage> {
   // State untuk melacak halaman yang sedang aktif di BottomNavBar
   int _selectedIndex = 0; // Index 0 = Beranda (default)
@@ -321,7 +337,7 @@ class _HomePageState extends State<HomePage> {
     const AccountPage(),
   ];
 
-  // Fungsi yang dipanggil saat item di BottomNavBar diklik
+  //! Fungsi yang dipanggil saat item di BottomNavBar diklik
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // Update index, dan Flutter otomatis ganti body
@@ -334,7 +350,7 @@ class _HomePageState extends State<HomePage> {
       // Background Scaffold: hijau kalau di Beranda (index 0), putih kalau di tab lain
       backgroundColor: _selectedIndex == 0 ? lsGreen : backgroundLight,
 
-      // Tampilkan widget di body sesuai index yang dipilih
+      //! Tampilkan widget di body sesuai index yang dipilih
       body: SafeArea(
         // SafeArea biar konten nggak ketutup notch atau status bar HP
         child: _pages.elementAt(_selectedIndex),
