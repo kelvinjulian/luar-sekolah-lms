@@ -331,22 +331,20 @@ class _RegisterPageState extends State<RegisterPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Cek Format (DIMODIFIKASI)
-                      // Pesan ini HANYA muncul jika:
-                      //    1. Format TIDAK valid, ATAU
-                      //    2. Format valid, TAPI belum terdaftar (agar ikon hijau muncul)
-                      //    3. DAN, emailnya BELUM terdaftar (!isEmailRegistered)
-                      if (!isEmailRegistered) // KONDISI BARU: Sembunyikan jika sudah terdaftar
+                      // 1. Cek Format (MODIFIKASI: Hanya muncul jika TIDAK valid ATAU BELUM terdaftar)
+                      // Pesan ini hanya muncul jika:
+                      //    A. Email BELUM terdaftar (!isEmailRegistered)
+                      //    B. DAN, formatnya TIDAK valid (!isEmailValid)
+                      if (!isEmailRegistered && !isEmailValid) // KONDISI BARU
                         checklistItem(
-                          isEmailValid,
+                          isEmailValid, // Kondisi ini pasti FALSE, jadi tampil MERAH
                           "Format tidak sesuai. Contoh:\nuser@mail.com",
                         ),
 
-                      // 2. Cek Status Terdaftar
-                      // Pesan ini HANYA tampil jika Emailnya BENAR-BENAR terdaftar
+                      // 2. Cek Status Terdaftar (Tidak Berubah)
                       if (isEmailRegistered)
                         checklistItem(
-                          !isEmailRegistered, // Kondisi ini pasti FALSE, sehingga tampil MERAH
+                          !isEmailRegistered, // Kondisi ini pasti FALSE, jadi tampil MERAH
                           "Email ini sudah terdaftar. Silakan masuk.",
                         ),
                     ],
