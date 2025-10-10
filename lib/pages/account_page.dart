@@ -290,7 +290,7 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 20),
 
             //? 2. Tanggal Lahir (pakai label terpisah + GestureDetector untuk kalender)
-            InputLabel(label: "Tanggal Lahir"), // Label terpisah
+            // InputLabel(label: "Tanggal Lahir"), // Label terpisah
             const SizedBox(height: 8), // Jarak manual yang sudah kita setting
             GestureDetector(
               onTap: () => _selectDate(context), // Panggil kalender
@@ -299,7 +299,7 @@ class _AccountPageState extends State<AccountPage> {
                 child: InputField(
                   controller: TextEditingController(text: _dateOfBirth),
                   label:
-                      "", // Label dikosongkan agar InputField tidak menampilkan label ganda
+                      "Tanggal Lahir", // Label dikosongkan agar InputField tidak menampilkan label ganda
                   hint: _dateOfBirth,
                   suffixIcon: const Icon(
                     Icons.calendar_today_outlined,
