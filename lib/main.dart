@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+// import 'pages/home_page.dart';
+// import 'pages/login_page.dart';
 import 'pages/register_page.dart';
+
 // import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,6 +28,7 @@ class LmsApp extends StatelessWidget {
         ), // background global putih
       ),
       home: const RegisterPage(),
+      // home: const HomePage(),
     );
   }
 }

@@ -1,48 +1,52 @@
 import 'package:flutter/material.dart';
 
-/// ================================
-/// WIDGET REUSABLE UNTUK INPUT FIELD
-/// ================================
-/// Widget ini digunakan untuk membuat TextField dengan label, hint, dan optional icon.
-/// Supaya kita tidak perlu menulis TextField berulang-ulang di halaman berbeda.
-///
+// Ini adalah widget custom kita buat bikin input field yang rapi
+// Dia StatelessWidget karena cuma menampilkan UI, nggak menyimpan data yang berubah (datanya diatur di Controller)
 class InputField extends StatelessWidget {
   // =========================
-  // PROPERTIES WIDGET
+  //* PROPERTI (Apa yang dibutuhkan widget ini dari luar)
   // =========================
-  final String label; // Label di atas TextField
+  final String label; // Teks label di atas field (contoh: "Nama Lengkap")
   final TextEditingController
-  controller; // Controller untuk mengambil/memantau isi TextField
-  final String hint; // Hint text di dalam TextField
-  final bool obscureText; // Apakah teks disembunyikan (misal untuk password)
-  final Widget? suffixIcon; // Icon di akhir TextField (misal visibility toggle)
-  final int minLines; // Minimal tinggi baris TextField
-  final int maxLines; // Maksimal tinggi baris TextField
+  controller; // Controller buat ngatur dan ambil isi teksnya
+  final String
+  hint; // Teks placeholder di dalam field (contoh: "Masukkan emailmu")
+  final bool
+  obscureText; // True kalau teksnya harus disembunyikan (untuk password)
+  final Widget? suffixIcon; // Icon tambahan di kanan field (contoh: icon mata)
+  final int minLines; // Jumlah baris minimum (penting buat field alamat)
+  final int maxLines; // Jumlah baris maksimum
+  final String? Function(String?)?
+  validator; // Fungsi buat cek validasi saat form disubmit
+  final void Function(String)?
+  onChanged; // Fungsi yang dipanggil setiap kali teks berubah (buat validasi real-time)
+  final TextInputType
+  keyboardType; // Tipe keyboard yang muncul (email, angka, atau teks biasa)
 
-  // =========================
-  // KONSTRUKTOR
-  // =========================
+  // Constructor: Ini yang menentukan properti apa saja yang harus diisi saat memanggil widget ini
   const InputField({
-    // konstruktor
-    super.key, // key opsional kegunannya untuk identifikasi widget
-    required this.label, // label wajib diisi saat membuat widget
-    required this.controller, // controller wajib diisi saat membuat widget
-    required this.hint, // hint wajib diisi saat membuat widget
-    this.obscureText = false, // default false (teks tidak disembunyikan)
-    this.suffixIcon, // default null (tidak ada icon)
-    this.minLines = 1, // default 1 baris
-    this.maxLines =
-        1, // kenapa 1? supaya TextField tidak membesar ke bawah, kecuali diubah saat pemanggilan widget
+    super.key,
+    required this.label, // Wajib diisi!
+    required this.controller, // Wajib diisi!
+    required this.hint, // Wajib diisi!
+    this.obscureText = false, // Nilai defaultnya false
+    this.suffixIcon,
+    this.minLines = 1, // Defaultnya 1 baris
+    this.maxLines = 1, // Defaultnya 1 baris
+    this.validator,
+    this.onChanged,
+    this.keyboardType = TextInputType.text, // Defaultnya keyboard teks biasa
   });
 
   @override
   Widget build(BuildContext context) {
+    // Kita pakai Column agar label (di atas) dan field (di bawah) bisa bertumpuk
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start, // Semua isinya rata kiri
       children: [
-        // =========================
-        // LABEL
-        // =========================
+        // ----------------------------
+        //* LABEL TEKS (Teks di atas field)
+        // ----------------------------
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -51,30 +55,42 @@ class InputField extends StatelessWidget {
             color: Colors.black,
           ),
         ),
+
+        // Jarak vertikal 8 piksel antara label dan field input
         const SizedBox(height: 8),
 
-        // =========================
-        // TEXTFIELD
-        // =========================
-        TextField(
-          controller: controller,
-          obscureText: obscureText, // sembunyikan teks jika password
-          style: const TextStyle(fontSize: 15, color: Colors.black),
+        // ----------------------------
+        //* FIELD INPUT UTAMA (TextFormField)
+        // ----------------------------
+        // ubah jadi TextFormField supaya bisa pakai validator
+        TextFormField(
+          controller: controller, // Pasang controller kita
+          obscureText: obscureText, // Sembunyikan teks kalau ini true
+          minLines: minLines, // Atur baris minimum
+          maxLines: maxLines, // Atur baris maksimum
+          validator: validator, // Pasang fungsi validator
+          onChanged: onChanged, // Pasang fungsi saat teks berubah
+          keyboardType: keyboardType, // Tentukan tipe keyboard yang muncul
+          // Styling dan dekorasi field (kotak, hint, dll)
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 15, color: Color(0xFF7B7F95)),
+            hintText: hint, // Pasang hint/placeholder
+            hintStyle: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF7B7F95),
+            ), // Warna dan ukuran hint
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6), // radius 6
-            ),
+              borderRadius: BorderRadius.circular(6),
+            ), // Bikin kotak dengan sudut melengkung 6
             contentPadding: const EdgeInsets.symmetric(
               vertical: 10,
               horizontal: 12,
-            ),
-            suffixIcon: suffixIcon, // icon di akhir TextField
-            isDense: true, // mengurangi tinggi default
+            ), // Padding di dalam field biar nggak terlalu mepet
+            suffixIcon: suffixIcon, // Pasang icon di kanan (kalau ada)
+            isDense: true, // Biar field-nya agak lebih ramping/padat
           ),
-          minLines: minLines,
-          maxLines: maxLines,
+
+          // Style teks saat user mengetik
+          style: const TextStyle(fontSize: 15, color: Colors.black),
         ),
       ],
     );
