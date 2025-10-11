@@ -28,6 +28,7 @@ class LmsApp extends StatelessWidget {
         ), // background global putih
       ),
       home: const RegisterPage(),
+      // home: const HomePage(),
     );
   }
 }

@@ -335,7 +335,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       // Pesan ini hanya muncul jika:
                       //    A. Email BELUM terdaftar (!isEmailRegistered)
                       //    B. DAN, formatnya TIDAK valid (!isEmailValid)
-                      if (!isEmailRegistered && !isEmailValid) // KONDISI BARU
+                      if (!isEmailRegistered && !isEmailValid)
                         checklistItem(
                           isEmailValid, // Kondisi ini pasti FALSE, jadi tampil MERAH
                           "Format tidak sesuai. Contoh:\nuser@mail.com",

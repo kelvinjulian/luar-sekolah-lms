@@ -317,7 +317,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-//! jadi alur perpindahan halamannya:
+//? jadi alur perpindahan halamannya:
 // 1. awalnya index 0 (Beranda) aktif, tampilkan MainContentWidget
 // 2. kalau user klik tab Akun (index 4), ganti _selected
 // index jadi 4, otomatis body ganti ke AccountPage
