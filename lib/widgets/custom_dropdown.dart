@@ -55,7 +55,7 @@ class CustomDropdown extends StatelessWidget {
                   color: item == options[0]
                       ? const Color(0xFF7B7F95)
                       : Colors.black, // Selain itu, kasih warna hitam
-                  fontSize: 15,
+                  fontSize: 16,
                 ),
               ),
             );
