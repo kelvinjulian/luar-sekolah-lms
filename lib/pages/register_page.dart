@@ -45,7 +45,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isPasswordHasNumber = false; // cek apakah ada angka
   bool isPasswordHasSymbol = false; // cek apakah ada simbol
 
-  //TODO
+  // TODO
   bool _isLoading = false; // Untuk mengontrol status loading
   bool _isSuccess = false; // Untuk menandakan pendaftaran berhasil
 
@@ -310,7 +310,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 5),
 
                 // Mengontrol kapan seluruh checklist muncul
-                //TODO MODIFIKASI: Animasi kemunculan checklist Email
+                // TODO MODIFIKASI: Animasi kemunculan checklist Email
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
@@ -493,7 +493,7 @@ class _RegisterPageState extends State<RegisterPage> {
           // =========================
           //* TOMBOL "Daftarkan Akun" DINAMIS
           // =========================
-          //TODO
+          // TODO
           SizedBox(
             width: double.infinity,
             height:
