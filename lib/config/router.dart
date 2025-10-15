@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
 import '../pages/home_page.dart';
+import '../pages/class_form_page.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/register',
@@ -36,6 +37,14 @@ final GoRouter router = GoRouter(
             return FadeTransition(opacity: animation, child: child);
           },
         );
+      },
+    ),
+    GoRoute(
+      path: '/class/form',
+      builder: (context, state) {
+        // Ambil data 'extra' jika ada (untuk mode edit)
+        final data = state.extra as Map<String, dynamic>?;
+        return ClassFormPage(initialData: data);
       },
     ),
   ],
