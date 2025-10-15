@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Buat pakai gambar SVG (seperti logo Google atau logo aplikasi)
+import 'package:go_router/go_router.dart'; // Buat navigasi antar halaman
 import '../widgets/input_field.dart'; // Ini ambil widget custom InputField kita dari folder widgets
-import 'login_page.dart'; // Import halaman Login, buat kalau user mau pindah
-import 'home_page.dart'; // Import halaman Home, buat kalau pendaftaran sukses
+import '../widgets/checklist_item.dart'; // Ambil widget ChecklistItem dari folder widgets
 
 // Ini adalah Widget utama kita, dia Stateful karena isinya bisa berubah-ubah (misalnya saat ngetik)
 class RegisterPage extends StatefulWidget {
@@ -44,6 +44,10 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isPasswordHasUppercase = false; // cek apakah ada huruf kapital
   bool isPasswordHasNumber = false; // cek apakah ada angka
   bool isPasswordHasSymbol = false; // cek apakah ada simbol
+
+  //TODO
+  bool _isLoading = false; // Untuk mengontrol status loading
+  bool _isSuccess = false; // Untuk menandakan pendaftaran berhasil
 
   // =========================
   //* FUNGSI UTILITY & VALIDASI
@@ -121,28 +125,6 @@ class _RegisterPageState extends State<RegisterPage> {
     phoneController.dispose();
     passwordController.dispose();
     super.dispose();
-  }
-
-  //? Widget custom untuk menampilkan item di checklist (icon centang/silang + teks)
-  Widget checklistItem(bool condition, String text) {
-    return Row(
-      children: [
-        Icon(
-          // Tampilkan check_circle (hijau) kalau kondisi true, error_outline (merah) kalau false
-          condition ? Icons.check_circle : Icons.error,
-          color: condition ? Colors.green : Colors.red,
-          size: 18,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: TextStyle(
-            color: condition ? Colors.green : Colors.red,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    );
   }
 
   // =========================
@@ -326,29 +308,38 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 const SizedBox(height: 5),
-                // Mengontrol kapan seluruh checklist muncul
-                if (emailController.text.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Cek Format (MODIFIKASI: Hanya muncul jika TIDAK valid ATAU BELUM terdaftar)
-                      // Pesan ini hanya muncul jika:
-                      //    A. Email BELUM terdaftar (!isEmailRegistered)
-                      //    B. DAN, formatnya TIDAK valid (!isEmailValid)
-                      if (!isEmailRegistered && !isEmailValid)
-                        checklistItem(
-                          isEmailValid, // Kondisi ini pasti FALSE, jadi tampil MERAH
-                          "Format tidak sesuai. Contoh:\nuser@mail.com",
-                        ),
 
-                      // 2. Cek Status Terdaftar (Tidak Berubah)
-                      if (isEmailRegistered)
-                        checklistItem(
-                          !isEmailRegistered, // Kondisi ini pasti FALSE, jadi tampil MERAH
-                          "Email ini sudah terdaftar. Silakan masuk.",
-                        ),
-                    ],
-                  ),
+                // Mengontrol kapan seluruh checklist muncul
+                //TODO MODIFIKASI: Animasi kemunculan checklist Email
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  child: emailController.text.isNotEmpty
+                      ? Opacity(
+                          opacity: 1.0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Beri sedikit jarak di dalam agar lebih rapi saat animasi
+                              const SizedBox(height: 8),
+                              if (!isEmailRegistered && !isEmailValid)
+                                ChecklistItem(
+                                  condition: isEmailValid,
+                                  text:
+                                      "Format tidak sesuai. Contoh:\nuser@mail.com",
+                                ),
+                              if (isEmailRegistered)
+                                ChecklistItem(
+                                  condition: !isEmailRegistered,
+                                  text:
+                                      "Email ini sudah terdaftar. Silakan masuk.",
+                                ),
+                            ],
+                          ),
+                        )
+                      // Widget ini akan ditampilkan saat kondisi false (ukuran 0x0)
+                      : const SizedBox.shrink(),
+                ),
 
                 // Jarak antar field
                 const SizedBox(height: 15),
@@ -369,14 +360,29 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 5),
                 // Checklist WhatsApp hanya muncul ketika user mulai mengetik
-                if (phoneController.text.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      checklistItem(isPhoneValid62, "Format nomor diawali 62"),
-                      checklistItem(isPhoneValidLength, "Minimal 10 angka"),
-                    ],
-                  ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  child: phoneController.text.isNotEmpty
+                      ? Opacity(
+                          opacity: 1.0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              ChecklistItem(
+                                condition: isPhoneValid62,
+                                text: "Format nomor diawali 62",
+                              ),
+                              ChecklistItem(
+                                condition: isPhoneValidLength,
+                                text: "Minimal 10 angka",
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
 
                 // Jarak antar field
                 const SizedBox(height: 15),
@@ -412,22 +418,37 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 5),
                 // Checklist Password hanya muncul ketika user mulai mengetik
-                if (passwordController.text.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      checklistItem(isPasswordMinLength, "Minimal 8 karakter"),
-                      checklistItem(
-                        isPasswordHasUppercase,
-                        "Terdapat 1 huruf kapital",
-                      ),
-                      checklistItem(isPasswordHasNumber, "Terdapat 1 angka"),
-                      checklistItem(
-                        isPasswordHasSymbol,
-                        "Terdapat 1 karakter simbol (!, @, dst)",
-                      ),
-                    ],
-                  ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  child: passwordController.text.isNotEmpty
+                      ? Opacity(
+                          opacity: 1.0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              ChecklistItem(
+                                condition: isPasswordMinLength,
+                                text: "Minimal 8 karakter",
+                              ),
+                              ChecklistItem(
+                                condition: isPasswordHasUppercase,
+                                text: "Terdapat 1 huruf kapital",
+                              ),
+                              ChecklistItem(
+                                condition: isPasswordHasNumber,
+                                text: "Terdapat 1 angka",
+                              ),
+                              ChecklistItem(
+                                condition: isPasswordHasSymbol,
+                                text: "Terdapat 1 karakter simbol (!, @, dst)",
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
 
                 // Jarak antar field
                 const SizedBox(height: 15),
@@ -472,36 +493,70 @@ class _RegisterPageState extends State<RegisterPage> {
           // =========================
           //* TOMBOL "Daftarkan Akun" DINAMIS
           // =========================
+          //TODO
           SizedBox(
             width: double.infinity,
+            height:
+                54, // Beri tinggi tetap agar layout tidak "loncat" saat loading
             child: ElevatedButton(
-              // Tombol bisa ditekan HANYA JIKA isButtonActive true
-              onPressed: isButtonActive
-                  ? () {
-                      // Jalankan validator form secara manual saat tombol ditekan
+              //? Tampilkan animasi loading ketika isLoading true
+              onPressed: isButtonActive && !_isLoading
+                  ? () async {
+                      // Validasi form sebelum melanjutkan
                       if (_formKey.currentState!.validate()) {
-                        // Kalau sukses, pindah ke halaman Home (ganti halaman, tidak bisa back)
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HomePage(),
-                          ),
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        await Future.delayed(const Duration(seconds: 2));
+                        setState(() {
+                          _isLoading = false;
+                          _isSuccess = true;
+                        });
+
+                        // Tampilkan SnackBar konfirmasi
+                        if (mounted) {
+                          // ignore: use_build_context_synchronously
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Pendaftaran berhasil! Anda akan diarahkan ke halaman login.',
+                              ),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior
+                                  .floating, // Agar terlihat lebih modern
+                            ),
+                          );
+                        }
+
+                        await Future.delayed(
+                          const Duration(milliseconds: 1500),
                         );
+
+                        if (mounted) {
+                          // ignore: use_build_context_synchronously
+                          context.go(
+                            '/login',
+                          ); // menggunakan go() untuk pindah dan hapus halaman sebelumnya
+                        }
                       }
                     }
-                  : null, // Kalau isButtonActive false, tombol dinonaktifkan
+                  : null,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                // Warna tombol: hijau kalau aktif, abu-abu kalau tidak aktif
-                backgroundColor: isButtonActive
-                    ? const Color(0xFF077d60)
-                    : Colors.grey,
+                backgroundColor: _isSuccess
+                    ? Colors
+                          .green // Warna hijau saat sukses
+                    : (isButtonActive ? const Color(0xFF077d60) : Colors.grey),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              child: const Text("Daftarkan Akun"),
+              // Ganti child untuk menampilkan konten dinamis
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : _isSuccess
+                  ? const Icon(Icons.check, size: 28)
+                  : const Text("Daftarkan Akun"),
             ),
           ),
 
@@ -560,13 +615,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   GestureDetector(
                     // Biar teks ini bisa diklik
                     onTap: () {
-                      // Pindah ke halaman Login
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
+                      //? Pindah ke Login (menambahkan halaman baru ke stack) sehingga bisa back lagi ke sini
+                      context.push('/login');
                     },
                     child: const Text(
                       "Masuk ke akunmu",
