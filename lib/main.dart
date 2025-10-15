@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-// import 'pages/home_page.dart';
-// import 'pages/login_page.dart';
-import 'pages/register_page.dart';
-
-// import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// Import file konfigurasi router Anda
+import 'config/router.dart';
+
+// Hapus import halaman individual dari main.dart
+// karena sekarang diatur oleh router
+// import 'pages/register_page.dart';
 
 void main() {
   runApp(const LmsApp());
@@ -15,20 +17,19 @@ class LmsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    // 1. Ubah MaterialApp menjadi MaterialApp.router
+    return MaterialApp.router(
+      // 2. Gunakan properti routerConfig untuk menghubungkan router Anda
+      routerConfig: router,
+
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        // textTheme: GoogleFonts.robotoTextTheme(), // pakai google fonts roboto
-        // textTheme: GoogleFonts.inclusiveSansTextTheme(), // pakai google fonts inclusive sans
-        textTheme:
-            GoogleFonts.beVietnamProTextTheme(), // pakai google fonts be vietnam pro
-        scaffoldBackgroundColor: const Color(
-          0xFFFFFFFF,
-        ), // background global putih
+        textTheme: GoogleFonts.beVietnamProTextTheme(),
+        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
       ),
-      home: const RegisterPage(),
-      // home: const HomePage(),
+      // 3. Properti 'home' dihapus karena halaman awal
+      //    sekarang ditentukan oleh 'initialLocation' di dalam file router.
     );
   }
 }
