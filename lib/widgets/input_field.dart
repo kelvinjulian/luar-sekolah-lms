@@ -23,6 +23,12 @@ class InputField extends StatelessWidget {
   final TextInputType
   keyboardType; // Tipe keyboard yang muncul (email, angka, atau teks biasa)
 
+  // TODO MODIFIKASI: Tambahkan properti opsional untuk ukuran font label
+  final double? labelSize;
+
+  // TODO MODIFIKASI: Tambahkan properti opsional untuk ketebalan font label
+  final FontWeight? labelWeight;
+
   // Constructor: Ini yang menentukan properti apa saja yang harus diisi saat memanggil widget ini
   const InputField({
     super.key,
@@ -36,6 +42,8 @@ class InputField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.keyboardType = TextInputType.text, // Defaultnya keyboard teks biasa
+    this.labelSize, // TODO MODIFIKASI: Tambahkan di constructor
+    this.labelWeight, // TODO MODIFIKASI: Tambahkan di constructor
   });
 
   @override
@@ -50,8 +58,13 @@ class InputField extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
+            // TODO MODIFIKASI: Gunakan labelWeight jika ada, jika tidak, default ke FontWeight.bold
+            fontWeight: labelWeight ?? FontWeight.w500,
+
+            // TODO MODIFIKASI: Gunakan labelSize jika ada, jika tidak, default ke 15
+            fontSize:
+                labelSize ??
+                15, //? Gunakan ukuran font yang diberikan atau default 15
             color: Colors.black,
           ),
         ),
