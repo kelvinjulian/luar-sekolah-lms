@@ -218,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: () {
-                      //TODO: Tambahkan logika untuk Lupa Password
+                      // TODO Tambahkan logika untuk Lupa Password
                     },
                     child: Text(
                       "Lupa password?",
