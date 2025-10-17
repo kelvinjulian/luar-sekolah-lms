@@ -290,6 +290,8 @@ class _LoginPageState extends State<LoginPage> {
                       }
                     }
                   : null,
+
+              // Tombol aktif hanya jika semua kriteria terpenuhi
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isSuccess
                     ? Colors.green

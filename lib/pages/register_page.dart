@@ -275,7 +275,7 @@ class _RegisterPageState extends State<RegisterPage> {
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
               children: [
-                //? Nama Lengkap
+                //* Nama Lengkap
                 InputField(
                   label: "Nama Lengkap",
                   controller: nameController,
@@ -288,9 +288,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     return null;
                   },
                 ),
+
+                // Jarak antar field
                 const SizedBox(height: 15),
 
-                //? Email
+                //* Email
                 InputField(
                   label: "Email Aktif",
                   controller: emailController,
@@ -308,8 +310,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 const SizedBox(height: 5),
-
-                // Mengontrol kapan seluruh checklist muncul
+                //? Mengontrol kapan seluruh checklist muncul
                 // TODO MODIFIKASI: Animasi kemunculan checklist Email
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
@@ -344,7 +345,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Jarak antar field
                 const SizedBox(height: 15),
 
-                //? Nomor WhatsApp
+                //* Nomor WhatsApp
                 InputField(
                   label: "Nomor WhatsApp Aktif",
                   controller: phoneController,
@@ -359,7 +360,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 const SizedBox(height: 5),
-                // Checklist WhatsApp hanya muncul ketika user mulai mengetik
+                //? Checklist WhatsApp hanya muncul ketika user mulai mengetik
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
@@ -387,7 +388,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Jarak antar field
                 const SizedBox(height: 15),
 
-                //? Password
+                //* Password
                 InputField(
                   label: "Password",
                   controller: passwordController,
@@ -417,7 +418,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                // Checklist Password hanya muncul ketika user mulai mengetik
+                //? Checklist Password hanya muncul ketika user mulai mengetik
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
@@ -502,18 +503,24 @@ class _RegisterPageState extends State<RegisterPage> {
               //? Tampilkan animasi loading ketika isLoading true
               onPressed: isButtonActive && !_isLoading
                   ? () async {
-                      // Validasi form sebelum melanjutkan
+                      //? Validasi form sebelum melanjutkan
                       if (_formKey.currentState!.validate()) {
+                        // 1. Mulai animasi loading
                         setState(() {
                           _isLoading = true;
                         });
+
+                        // 2. Simulasikan proses login (misal: 2 detik)
                         await Future.delayed(const Duration(seconds: 2));
+
+                        // 3. Tandai sukses dan hentikan loading
                         setState(() {
-                          _isLoading = false;
+                          _isLoading = false; // Selesai loading
                           _isSuccess = true;
                         });
 
-                        // Tampilkan SnackBar konfirmasi
+                        // 4. Tampilkan pesan sukses
+                        //? Tampilkan SnackBar konfirmasi, kenapa menggunakan if (mounted) karena ini async jadi perlu dicek dulu apakah widget masih ada di layar
                         if (mounted) {
                           // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -528,19 +535,24 @@ class _RegisterPageState extends State<RegisterPage> {
                           );
                         }
 
+                        // 5. Beri jeda agar user melihat animasi & pesan
                         await Future.delayed(
                           const Duration(milliseconds: 1500),
                         );
 
+                        // 6. Arahkan ke Halaman Login
                         if (mounted) {
                           // ignore: use_build_context_synchronously
                           context.go(
                             '/login',
-                          ); // menggunakan go() untuk pindah dan hapus halaman sebelumnya
+                            //TODO
+                          ); //? menggunakan go() untuk pindah dan hapus halaman sebelumnya
                         }
                       }
                     }
                   : null,
+
+              // Tombol aktif hanya jika semua kriteria terpenuhi
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isSuccess
                     ? Colors
@@ -615,6 +627,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   GestureDetector(
                     // Biar teks ini bisa diklik
                     onTap: () {
+                      //TODO
                       //? Pindah ke Login (menambahkan halaman baru ke stack) sehingga bisa back lagi ke sini
                       context.push('/login');
                     },
