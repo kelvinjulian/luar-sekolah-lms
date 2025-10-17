@@ -388,3 +388,150 @@ class SubscriptionCard extends StatelessWidget {
     );
   }
 }
+
+// TODO
+// =================================================================
+// 6. WIDGET ADMIN COURSE CARD (UNTUK HALAMAN KELAS ADMIN)
+// =================================================================
+// Kartu ini mirip dengan CourseCard, tapi dengan tambahan tombol aksi
+// seperti Edit dan Delete untuk keperluan admin.
+class AdminCourseCard extends StatelessWidget {
+  final String title;
+  final String image;
+  final List<String> tags;
+  final List<Color> tagColors;
+  final String price;
+  final VoidCallback onEdit; // Fungsi yang dipanggil saat 'Edit' diklik
+  final VoidCallback onDelete; // Fungsi yang dipanggil saat 'Delete' diklik
+
+  const AdminCourseCard({
+    super.key,
+    required this.title,
+    required this.image,
+    required this.tags,
+    required this.tagColors,
+    required this.price,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      margin: const EdgeInsets.only(bottom: 16.0), // Jarak antar kartu
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gambar Thumbnail di kiri
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(image, width: 80, height: 80, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 12),
+
+          // Informasi kelas di tengah (Expanded agar memenuhi sisa ruang)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: tags.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final tag = entry.value;
+                    final color = tagColors.length > index
+                        ? tagColors[index]
+                        : Colors.grey;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        tag,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  price,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: lsGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Menu Aksi (tiga titik) di kanan
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') {
+                onEdit();
+              } else if (value == 'delete') {
+                onDelete();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: ListTile(
+                  leading: Icon(Icons.edit_outlined, size: 20),
+                  title: Text('Edit'),
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: Colors.red,
+                  ),
+                  title: Text('Delete', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
