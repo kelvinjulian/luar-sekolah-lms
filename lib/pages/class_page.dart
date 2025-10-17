@@ -1,22 +1,99 @@
-// lib/pages/kelas_page.dart
+// lib/pages/class_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Jangan lupa import go_router
-import '../widgets/custom_cards.dart'; // Import file kartu kustom Anda
+import 'package:go_router/go_router.dart'; // Digunakan untuk navigasi antar halaman
+import '../widgets/custom_cards.dart'; // Mengimpor widget kartu kustom kita, termasuk AdminCourseCard
 
-// Definisi warna yang konsisten
+// Definisi warna yang konsisten agar mudah diubah di satu tempat
 const Color lsGreen = Color(0xFF0DA680);
 const Color tagBlue = Color.fromARGB(255, 37, 146, 247);
 const Color tagGreen = Color(0xFF0DA680);
 
-class ClassPage extends StatelessWidget {
+// ClassPage diubah menjadi StatefulWidget agar bisa menyimpan dan mengelola data (state)
+// yang bisa berubah, seperti daftar kelas.
+class ClassPage extends StatefulWidget {
   const ClassPage({super.key});
 
   @override
+  State<ClassPage> createState() => _ClassPageState();
+}
+
+class _ClassPageState extends State<ClassPage> {
+  //? Ini adalah "database sementara" kita.
+  // Sebuah List yang berisi Map, di mana setiap Map adalah satu data kelas.
+  // Di aplikasi nyata, data ini akan diambil dari server/API.
+  final List<Map<String, dynamic>> _allClasses = [
+    {
+      'id': '1',
+      'nama': "Teknik Pemilahan dan Pengolahan Sampah",
+      'harga': "1500000",
+      'kategori': "SPL",
+      'thumbnail': "assets/images/course1.png",
+      'tags': ["Prakerja", "SPL"],
+      'tagColors': [tagBlue, tagGreen],
+    },
+    {
+      'id': '2',
+      'nama': "Meningkatkan Pertumbuhan Tanaman untuk Petani Terampil",
+      'harga': "1500000",
+      'kategori': "Prakerja",
+      'thumbnail': "assets/images/course2.png",
+      'tags': ["Prakerja"],
+      'tagColors': [tagBlue],
+    },
+  ];
+
+  //* Fungsi ini dibuat terpisah untuk menampilkan dialog konfirmasi
+  // sebelum melakukan aksi hapus. Ini adalah praktik UX yang baik.
+  Future<void> _showDeleteConfirmationDialog(
+    Map<String, dynamic> classData,
+  ) async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus kelas "${classData['nama']}"?',
+          ),
+          actions: <Widget>[
+            // Tombol untuk membatalkan aksi
+            TextButton(
+              child: const Text('Batal'),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(), // Cukup tutup dialog
+            ),
+            // Tombol untuk mengkonfirmasi aksi hapus
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Ya, Hapus'),
+              onPressed: () {
+                // setState() memberitahu Flutter bahwa ada perubahan data,
+                // sehingga UI perlu di-render ulang.
+                setState(() {
+                  // Hapus item dari list _allClasses yang memiliki 'id' yang sama.
+                  _allClasses.removeWhere(
+                    (item) => item['id'] == classData['id'],
+                  );
+                });
+                Navigator.of(
+                  dialogContext,
+                ).pop(); // Tutup dialog setelah menghapus
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //* Method build() adalah tempat semua UI untuk halaman ini dibuat.
+  @override
   Widget build(BuildContext context) {
-    // DefaultTabController mengatur state untuk TabBar dan TabBarView
+    // DefaultTabController adalah widget yang mengatur state untuk TabBar
+    // dan TabBarView, membuatnya saling terhubung.
     return DefaultTabController(
-      length: 3, // Jumlah tab yang Anda inginkan
+      length: 3, // Jumlah tab yang kita miliki
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -38,31 +115,48 @@ class ClassPage extends StatelessWidget {
             ],
           ),
         ),
+        // TabBarView berisi konten untuk setiap tab. Urutannya harus sama dengan
+        // urutan Tab di dalam TabBar.
         body: TabBarView(
           children: [
-            _buildClassList(context), // Konten Tab 1
-            _buildClassList(context), // Konten Tab 2 (contoh)
+            _buildClassList(context), // Konten untuk tab pertama
+            _buildClassList(
+              context,
+            ), // Konten untuk tab kedua (bisa difilter nanti)
             const Center(
               child: Text('Belum ada kelas lainnya'),
-            ), // Konten Tab 3
+            ), // Konten untuk tab ketiga
           ],
         ),
       ),
     );
   }
 
-  // Widget helper untuk membangun daftar kelas
+  //* Ini adalah widget helper yang dibuat terpisah untuk membangun UI daftar kelas.
+  //? Tujuannya agar method build() utama tetap bersih dan mudah dibaca.
   Widget _buildClassList(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // Tombol Tambah Kelas
+        // ======================
+        //* Tambah Kelas Button
+        // ======================
         ElevatedButton.icon(
-          onPressed: () {
-            // TODO MODIFIKASI: Navigasi untuk "Tambah Kelas"
-            // Kita panggil rute '/class/form' tanpa mengirim data 'extra'.
-            // Ini akan membuat ClassFormPage berjalan dalam mode "Tambah".
-            context.push('/class/form');
+          //? Fungsi onPressed dijadikan 'async' agar kita bisa menggunakan 'await'.
+          onPressed: () async {
+            //? 'await context.push(...)' akan membuka halaman form dan MENUNGGU
+            //? sampai halaman tersebut ditutup dan mengembalikan data.
+            final result = await context.push('/class/form');
+
+            //? Setelah kembali dari form, kita cek apakah ada data yang dikembalikan.
+            //? Pengguna bisa saja menekan 'Kembali' tanpa menyimpan, maka result akan null.
+            if (result != null && result is Map<String, dynamic>) {
+              setState(() {
+                // Jika ada data baru, tambahkan ke list _allClasses.
+                // UI akan otomatis diperbarui.
+                _allClasses.add(result);
+              });
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: lsGreen,
@@ -77,50 +171,47 @@ class ClassPage extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Daftar kelas menggunakan widget AdminCourseCard
-        AdminCourseCard(
-          title: "Teknik Pemilahan dan Pengolahan Sampah",
-          image: "assets/images/course1.png",
-          tags: const ["Prakerja", "SPL"],
-          tagColors: const [tagBlue, tagGreen],
-          price: "Rp 1.500.000",
-          onEdit: () {
-            // TODO MODIFIKASI: Navigasi untuk "Edit Kelas"
-            // 1. Siapkan data dari kelas ini dalam bentuk Map
-            final classData = {
-              'nama': "Teknik Pemilahan dan Pengolahan Sampah",
-              'harga': "1500000", // Kirim sebagai string angka jika perlu
-              'kategori': "SPL",
-              'thumbnail': "assets/images/course1.png",
-            };
+        //* Ini adalah cara dinamis untuk membuat daftar widget dari daftar data.
+        //* Operator '...' (spread) digunakan untuk memasukkan semua widget
+        //* yang dihasilkan oleh .map() ke dalam list children dari ListView.
+        ..._allClasses.map((classData) {
+          // Untuk setiap item 'classData' di dalam list '_allClasses',
+          //? kita buat satu widget AdminCourseCard.
+          return AdminCourseCard(
+            title: classData['nama'],
+            image: classData['thumbnail'],
+            //? Kita perlu melakukan casting (.cast<String>()) untuk memastikan tipe datanya benar
+            tags: (classData['tags'] as List<dynamic>).cast<String>(),
+            tagColors: (classData['tagColors'] as List<dynamic>).cast<Color>(),
+            price: "Rp ${classData['harga']}",
+            onEdit: () async {
+              // Logikanya sama seperti 'Tambah', tapi kita mengirim 'classData'
+              // melalui 'extra' agar form berjalan dalam mode edit.
+              final result = await context.push(
+                '/class/form',
+                extra: classData,
+              );
 
-            // 2. Panggil rute '/class/form' dan kirim 'classData'
-            //    melalui parameter 'extra'.
-            context.push('/class/form', extra: classData);
-          },
-          onDelete: () {
-            // TODO Tampilkan dialog konfirmasi sebelum menghapus
-            print("Delete Tapped");
-          },
-        ),
-        AdminCourseCard(
-          title: "Meningkatkan Pertumbuhan Tanaman untuk Petani Terampil",
-          image: "assets/images/course2.png",
-          tags: const ["Prakerja"],
-          tagColors: const [tagBlue],
-          price: "Rp 1.500.000",
-          onEdit: () {
-            // TODO MODIFIKASI: Lakukan hal yang sama untuk item lainnya
-            final classData = {
-              'nama': "Meningkatkan Pertumbuhan Tanaman untuk Petani Terampil",
-              'harga': "1500000",
-              'kategori': "Prakerja",
-              'thumbnail': "assets/images/course2.png",
-            };
-            context.push('/class/form', extra: classData);
-          },
-          onDelete: () {},
-        ),
+              if (result != null && result is Map<String, dynamic>) {
+                setState(() {
+                  // Jika ada data yang dikembalikan (perubahan disimpan),
+                  // kita cari item yang lama di dalam list berdasarkan 'id'.
+                  final index = _allClasses.indexWhere(
+                    (item) => item['id'] == result['id'],
+                  );
+                  if (index != -1) {
+                    // Lalu kita ganti data lama dengan data baru (hasil editan).
+                    _allClasses[index] = result;
+                  }
+                });
+              }
+            },
+            onDelete: () {
+              // Memanggil dialog konfirmasi sebelum menghapus data.
+              _showDeleteConfirmationDialog(classData);
+            },
+          );
+        }).toList(),
       ],
     );
   }
