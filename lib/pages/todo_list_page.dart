@@ -1,76 +1,137 @@
 // lib/pages/todo_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart'; // <-- IMPORT PENTING
+import 'package:go_router/go_router.dart'; // Import untuk navigasi
 import '../viewmodels/todo_viewmodel.dart';
 import '../models/todo.dart';
 
-// Kita gunakan 'ChangeNotifierProvider' untuk 'membuat' ViewModel
-// saat halaman ini pertama kali dibuat.
-class TodoListPage extends StatelessWidget {
+//* --- UBAH MENJADI STATEFULWIDGET ---
+class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
 
   @override
+  State<TodoListPage> createState() => _TodoListPageState();
+}
+
+class _TodoListPageState extends State<TodoListPage> {
+  //* Kita tidak perlu initState() untuk fetch data lagi
+  // karena sekarang dilakukan di main.dart
+
+  @override
   Widget build(BuildContext context) {
-    //? Membungkus Scaffold dengan ChangeNotifierProvider, ini membuat ViewModel saat halaman dibuka pertama kali dan otomatis memanggil fetchTodos() pertama kali
-    return ChangeNotifierProvider(
-      create: (context) =>
-          TodoViewModel()..fetchTodos(), // Langsung panggil fetchTodos
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Daftar Tugas (Todos)"),
-          backgroundColor: Colors.white,
-          elevation: 1,
-        ),
-        body: Column(
-          children: [
-            // --- BAGIAN SEARCH & FILTER ---
-            _buildSearchAndFilter(),
+    //? 1. "TONTON" VIEWMODEL GLOBAL
+    //? 'watch' berarti: "Bangun ulang halaman ini jika ViewModel berubah"
+    final viewModel = context.watch<TodoViewModel>();
 
-            // --- BAGIAN LIST DATA ---
-            Expanded(
-              // 'Consumer' mendengarkan perubahan pada TodoViewModel
-              child: Consumer<TodoViewModel>(
-                builder: (context, viewModel, child) {
-                  //? 1. Loading State
-                  if (viewModel.isLoading && viewModel.filteredTodos.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  //? 2. Error State
-                  if (viewModel.errorMessage != null) {
-                    return _buildErrorState(context, viewModel.errorMessage!);
-                  }
-
-                  //? 3. Empty State (setelah filter atau search)
-                  if (viewModel.filteredTodos.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  //? 4. Success/Data State
-                  // (Tugas: Pull to Refresh)
-                  return RefreshIndicator(
-                    onRefresh:
-                        viewModel.fetchTodos, // Panggil fungsi fetch lagi
-                    //? listView.builder menggunakan viewModel.filteredTodos (bukan _allTodos) untuk menampilkan data yang sudah di-filter
-                    child: ListView.builder(
-                      itemCount: viewModel.filteredTodos.length,
-                      itemBuilder: (context, index) {
-                        final todo = viewModel.filteredTodos[index];
-                        return _buildTodoTile(context, todo);
-                      },
-                    ),
-                  );
-                },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Daftar Tugas (LMS)"),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        automaticallyImplyLeading: false,
+        actions: [
+          //? Tombol refresh memanggil fetchTodos dari ViewModel global
+          if (viewModel.isLoading && viewModel.filteredTodos.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
+            )
+          else
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: viewModel.fetchTodos, // Panggil fetch dari VM global
             ),
-          ],
-        ),
+        ],
+      ),
+      body: Column(
+        children: [
+          //? 2. KIRIM VIEWMODEL KE WIDGET FILTER
+          _buildSearchAndFilter(viewModel),
+          Expanded(
+            // Gunakan 'Builder' untuk logika if/else
+            child: Builder(
+              builder: (context) {
+                //? 3. TAMPILKAN UI BERDASARKAN STATE VIEWMODEL
+                // ini adalah pengganti future builder
+                // Ini seperti 'snapshot.connectionState == ConnectionState.waiting'
+                if (viewModel.isLoading && viewModel.filteredTodos.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                // Ini seperti 'snapshot.hasError'
+                if (viewModel.errorMessage != null &&
+                    viewModel.filteredTodos.isEmpty) {
+                  return _buildErrorState(context, viewModel.errorMessage!);
+                }
+                if (viewModel.filteredTodos.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                // 4. DATA AMAN, TAMPILKAN LISTVIEW
+                // Ini sama dengan 'snapshot.hasData'
+                return ListView.builder(
+                  itemCount: viewModel.filteredTodos.length,
+                  itemBuilder: (context, index) {
+                    final todo = viewModel.filteredTodos[index];
+                    return _buildTodoTile(context, todo, viewModel);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+
+      //? 5. TOMBOL TAMBAH (CREATE)
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddTodoDialog(context); // Panggil dialog
+        },
+        child: Icon(Icons.add),
+        tooltip: 'Tambah Tugas',
       ),
     );
   }
 
-  //? Widget untuk Error State
+  //? 6. Dialog untuk menambah todo
+  void _showAddTodoDialog(BuildContext context) {
+    final TextEditingController textController = TextEditingController();
+    // Ambil VM global (listen: false)
+    final viewModel = context.read<TodoViewModel>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text('Tambah Tugas Baru'),
+          content: TextField(
+            controller: textController,
+            decoration: InputDecoration(hintText: 'Tulis tugas...'),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (textController.text.isEmpty) return;
+                await viewModel.addTodo(textController.text);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              },
+              child: Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //? 7. WIDGET HELPERS UNTUK ERROR STATE
   Widget _buildErrorState(BuildContext context, String message) {
     return Center(
       child: Padding(
@@ -82,10 +143,8 @@ class TodoListPage extends StatelessWidget {
             const SizedBox(height: 10),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            // (Tugas: Tombol Retry)
             ElevatedButton(
               onPressed: () {
-                // Panggil fetchTodos lagi
                 context.read<TodoViewModel>().fetchTodos();
               },
               child: const Text("Coba Lagi (Retry)"),
@@ -96,7 +155,7 @@ class TodoListPage extends StatelessWidget {
     );
   }
 
-  //? Widget untuk Empty State
+  //? 8. WIDGET HELPERS UNTUK EMPTY STATE
   Widget _buildEmptyState() {
     return const Center(
       child: Padding(
@@ -111,7 +170,7 @@ class TodoListPage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              "Tidak ada todo yang sesuai dengan filter atau pencarian Anda.",
+              "Tekan tombol + untuk menambah data baru.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -121,137 +180,121 @@ class TodoListPage extends StatelessWidget {
     );
   }
 
-  //? Widget untuk Search dan Filter
-  Widget _buildSearchAndFilter() {
-    // Kita pakai Consumer di sini agar tidak me-rebuild seluruh halaman
-    return Consumer<TodoViewModel>(
-      builder: (context, viewModel, child) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              // (Tugas: Pencarian Judul Todo)
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Cari judul todo...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  // Panggil fungsi di ViewModel
-                  viewModel.setSearchQuery(value);
-                },
+  //? 9 . WIDGET HELPERS UNTUK SEARCH & FILTER
+  Widget _buildSearchAndFilter(TodoViewModel viewModel) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          TextField(
+            decoration: const InputDecoration(
+              labelText: 'Cari tugas...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: viewModel.setSearchQuery,
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<FilterStatus>(
+            segments: const [
+              ButtonSegment(value: FilterStatus.all, label: Text('All')),
+              ButtonSegment(
+                value: FilterStatus.completed,
+                label: Text('Completed'),
               ),
-              const SizedBox(height: 10),
-              // (Tugas: Filter Status)
-              SegmentedButton<FilterStatus>(
-                // Gunakan style dari PR Minggu 5 jika perlu
-                style: SegmentedButton.styleFrom(
-                  //... kustomisasi style jika ada
-                ),
-                segments: const [
-                  ButtonSegment(value: FilterStatus.all, label: Text('All')),
-                  ButtonSegment(
-                    value: FilterStatus.completed,
-                    label: Text('Completed'),
-                  ),
-                  ButtonSegment(
-                    value: FilterStatus.pending,
-                    label: Text('Pending'),
-                  ),
-                ],
-                // 'selected' butuh Set, dan 'filterStatus' adalah getter
-                selected: {viewModel.filterStatus},
-                onSelectionChanged: (newSelection) {
-                  // Panggil fungsi di ViewModel
-                  viewModel.setFilter(newSelection.first);
-                },
+              ButtonSegment(
+                value: FilterStatus.pending,
+                label: Text('Pending'),
               ),
             ],
+            selected: {viewModel.filterStatus},
+            onSelectionChanged: (newSelection) {
+              viewModel.setFilter(newSelection.first);
+            },
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  //? Widget untuk satu item Todo
-  Widget _buildTodoTile(BuildContext context, Todo todo) {
+  //? 10. WIDGET TILE UNTUK TIAP ITEM
+  Widget _buildTodoTile(
+    BuildContext context,
+    Todo todo,
+    TodoViewModel viewModel,
+  ) {
     return ListTile(
-      // (Tugas: Menampilkan title dan completed)
-      title: Text(todo.title),
-      leading: Checkbox(
-        value: todo.completed,
-        onChanged: null, // Biar non-aktif
-      ),
-      trailing: Icon(
-        todo.completed ? Icons.check_circle : Icons.radio_button_unchecked,
-        color: todo.completed ? Colors.green : Colors.grey,
-      ),
-      onTap: () {
-        // ===============================================
-        // --- PERUBAHAN NAVIGASI MENGGUNAKAN GO_ROUTER ---
-        // ===============================================
-
-        // Ganti Navigator.of(context).push
-        // menjadi context.push
-
-        // Kita 'push' rute '/todo-detail' yang sudah kita daftarkan
-        // dan mengirim objek 'todo' sebagai 'extra'.
-        // GoRouter akan menangani sisanya (animasi, data passing).
-        context.push('/todo-detail', extra: todo);
-
-        // --- Versi Lama ---
-        // Navigator.of(context).push(MaterialPageRoute(
-        //   builder: (context) => TodoDetailPage(todo: todo),
-        // ));
-      },
-    );
-  }
-}
-
-// =======================================================
-// --- HALAMAN DETAIL TODO ---
-// =======================================================
-// Tidak ada perubahan di sini, GoRouter akan menampilkannya
-// dengan benar.
-
-class TodoDetailPage extends StatelessWidget {
-  final Todo todo;
-  const TodoDetailPage({super.key, required this.todo});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Detail Tugas")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              todo.title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Text("Status: ", style: const TextStyle(fontSize: 16)),
-                Text(
-                  todo.completed ? "Selesai" : "Pending",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: todo.completed ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text("User ID: ${todo.userId}"),
-            Text("Todo ID: ${todo.id}"),
-          ],
+      title: Text(
+        todo.text,
+        style: TextStyle(
+          decoration: todo.completed ? TextDecoration.lineThrough : null,
+          color: todo.completed ? Colors.grey[600] : null,
         ),
       ),
+
+      //? 11. Update (Toggle Status)
+      leading: Checkbox(
+        value: todo.completed,
+        onChanged: (bool? value) {
+          viewModel.toggleTodoStatus(todo); // Panggil ViewModel
+        },
+      ),
+      trailing: IconButton(
+        icon: Icon(Icons.delete_outline, color: Colors.red.shade700),
+
+        // ? 12. Delete dengan konfirmasi
+        onPressed: () async {
+          // Jadikan async
+          // 1. Tampilkan dialog konfirmasi
+          final bool? shouldDelete = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: Text('Konfirmasi Hapus'),
+                content: Text(
+                  'Apakah Anda yakin ingin menghapus "${todo.text}"?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      // Tutup dialog, kembalikan 'false' (Batal)
+                      Navigator.pop(dialogContext, false);
+                    },
+                    child: Text('Batal'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red, // Beri warna merah
+                    ),
+                    onPressed: () {
+                      // Tutup dialog, kembalikan 'true' (Hapus)
+                      Navigator.pop(dialogContext, true);
+                    },
+                    child: Text('Hapus'),
+                  ),
+                ],
+              );
+            },
+          );
+
+          // 2. Hanya hapus jika pengguna menekan 'Hapus' (true)
+          if (shouldDelete == true) {
+            if (todo.id != null) {
+              // (context.mounted) adalah pengecekan keamanan
+              if (context.mounted) {
+                context.read<TodoViewModel>().removeTodo(
+                  todo.id!,
+                ); //? 13. Panggil ViewModel
+              }
+            }
+          }
+        },
+      ),
+
+      //? 14. Navigasi ke halaman detail
+      onTap: () {
+        context.push('/todo-detail', extra: todo);
+      },
     );
   }
 }
