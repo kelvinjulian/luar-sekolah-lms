@@ -6,12 +6,18 @@ import '../pages/register_page.dart'; // Halaman Register.
 import '../pages/home_page.dart'; // Halaman Home.
 import '../pages/class_form_page.dart'; // Halaman Form Tambah/Edit Kelas.
 
+//TODO --- TAMBAHKAN IMPORT BARU ---
+// Asumsi Anda meletakkan TodoDetailPage di file todo_list_page.dart
+import '../pages/todo_list_page.dart';
+// Import model Todo untuk type casting state.extra
+import '../models/todo.dart';
+
 // 'router' adalah objek utama yang akan kita pasang di MaterialApp.
 //* Objek ini berisi semua aturan navigasi untuk seluruh aplikasi.
 final GoRouter router = GoRouter(
   //? initialLocation menentukan halaman mana yang akan pertama kali ditampilkan
-  // saat aplikasi dibuka.
-  initialLocation: '/register',
+  //TODO saat aplikasi dibuka.
+  initialLocation: '/home',
 
   // 'routes' adalah daftar semua "alamat" atau rute yang dikenali oleh aplikasi.
   routes: [
@@ -78,6 +84,32 @@ final GoRouter router = GoRouter(
 
         // Data yang diterima kemudian dilemparkan ke dalam constructor ClassFormPage.
         return ClassFormPage(initialData: data);
+      },
+    ),
+
+    // =======================================================
+    //TODO --- TAMBAHKAN RUTE BARU UNTUK HALAMAN DETAIL TODO ---
+    // =======================================================
+    GoRoute(
+      path: '/todo-detail',
+      // Kita gunakan pageBuilder agar konsisten dengan animasi Fade
+      pageBuilder: (context, state) {
+        // Ambil data Todo yang dikirimkan via 'extra'
+        // Ini persis seperti yang dilakukan untuk '/class/form'
+        // namun kita cast sebagai objek 'Todo'
+        final todo = state.extra as Todo;
+
+        return CustomTransitionPage(
+          key: state.pageKey,
+          // Tampilkan halaman TodoDetailPage
+          child: TodoDetailPage(todo: todo),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Gunakan animasi Fade yang sama untuk konsistensi
+            return FadeTransition(opacity: animation, child: child);
+          },
+          // Anda bisa sesuaikan durasi jika perlu
+          // transitionDuration: const Duration(milliseconds: 350),
+        );
       },
     ),
   ],

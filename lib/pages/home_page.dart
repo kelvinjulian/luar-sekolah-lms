@@ -5,6 +5,9 @@ import 'main_content_page.dart';
 import 'account_page.dart';
 import 'class_page.dart';
 
+//TODO --- TAMBAHKAN IMPORT BARU ---
+import 'todo_list_page.dart';
+
 // =========================
 // DEFINISI WARNA
 // =========================
@@ -25,7 +28,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  // TODO MODIFIKASI: Menambahkan PageController untuk mengontrol PageView
+  // Menambahkan PageController untuk mengontrol PageView
   late PageController _pageController;
 
   final List<Widget> _pages = <Widget>[
@@ -35,6 +38,7 @@ class _HomePageState extends State<HomePage> {
     const ClassPage(),
     const Center(child: Text("Halaman Kelasku")),
     const Center(child: Text("Halaman KoinLS")),
+    const TodoListPage(), //TODO Halaman Daftar Todo
     const AccountPage(),
   ];
 
@@ -52,7 +56,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // TODO MODIFIKASI: Fungsi ini sekarang juga mengontrol animasi PageController
+  // Fungsi ini sekarang juga mengontrol animasi PageController
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -70,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: _selectedIndex == 0 ? lsGreen : backgroundLight,
 
-      // TODO MODIFIKASI: Mengganti body dengan PageView untuk transisi yang mulus
+      // Mengganti body dengan PageView untuk transisi yang mulus
       body: SafeArea(
         child: PageView(
           controller: _pageController,
@@ -86,7 +90,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // BOTTOM NAVIGATION BAR (Tidak ada perubahan di sini)
+      //TODO Modifikasi: BOTTOM NAVIGATION BAR
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -99,6 +103,10 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Kelas"),
           BottomNavigationBarItem(icon: Icon(Icons.school), label: "Kelasku"),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: "KoinLS"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt),
+            label: "Todo",
+          ), //TODO <--- ITEM BARU
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Akun"),
         ],
       ),
