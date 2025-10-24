@@ -1,15 +1,44 @@
+// lib/main.dart
+
+// 1. Import SSL & PROVIDER
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:io'; // Import untuk HttpOverrides
+import 'package:provider/provider.dart'; // <-- IMPORT PROVIDER
+import 'viewmodels/todo_viewmodel.dart'; // <-- IMPORT VIEWMODEL
 
-// Import file konfigurasi router Anda
+// Import file konfigurasi router
 import 'config/router.dart';
 
-// Hapus import halaman individual dari main.dart
-// karena sekarang diatur oleh router
-// import 'pages/register_page.dart';
+//? 2. CLASS UNTUK MEMPERBAIKI ERROR SSL
+// ==========================================================
+//* CLASS UNTUK MENGATASI ERROR SSL CERTIFICATE
+// ==========================================================
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+// ==========================================================
 
 void main() {
-  runApp(const LmsApp());
+  //? 3. AKTIFKAN PERBAIKAN SSL
+  HttpOverrides.global = MyHttpOverrides();
+
+  //? 4. JALANKAN APLIKASI DENGAN PROVIDER
+  runApp(
+    //? 5. BUAT VIEWMODEL SECARA GLOBAL
+    ChangeNotifierProvider(
+      // Kita buat ViewModel di sini agar global
+      // dan langsung panggil fetchTodos() saat app pertama kali dibuka
+      create: (context) => TodoViewModel()..fetchTodos(),
+      child: const LmsApp(), // Aplikasi utama
+    ),
+  );
+  // ==========================================================
 }
 
 class LmsApp extends StatelessWidget {
@@ -17,9 +46,8 @@ class LmsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Ubah MaterialApp menjadi MaterialApp.router
     return MaterialApp.router(
-      // 2. Gunakan properti routerConfig untuk menghubungkan router Anda
+      //? Hubungkan ke router
       routerConfig: router,
 
       debugShowCheckedModeBanner: false,
@@ -28,8 +56,6 @@ class LmsApp extends StatelessWidget {
         textTheme: GoogleFonts.beVietnamProTextTheme(),
         scaffoldBackgroundColor: const Color(0xFFFFFFFF),
       ),
-      // 3. Properti 'home' dihapus karena halaman awal
-      //    sekarang ditentukan oleh 'initialLocation' di dalam file router.
     );
   }
 }
