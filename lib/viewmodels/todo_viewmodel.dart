@@ -5,6 +5,7 @@ import '../services/todo_service.dart';
 
 enum FilterStatus { all, completed, pending }
 
+//? memberinya NotifyListeners untuk memberitahu UI saat ada perubahan data
 class TodoViewModel extends ChangeNotifier {
   final TodoService _service = TodoService();
 
@@ -24,14 +25,14 @@ class TodoViewModel extends ChangeNotifier {
   //? 3. GETTER PINTAR (UI MENGAMBIL DATA DARI SINI)
   List<Todo> get filteredTodos {
     List<Todo> todos = _allTodos;
-    // Terapkan filter status
+    //? Terapkan filter status completed/pending
     if (_filterStatus == FilterStatus.completed) {
       todos = todos.where((todo) => todo.completed).toList();
     } else if (_filterStatus == FilterStatus.pending) {
       todos = todos.where((todo) => !todo.completed).toList();
     } // ... (filter pending) ...
 
-    // Terapkan filter search
+    //? Terapkan filter search
     if (_searchQuery.isNotEmpty) {
       todos = todos
           .where(

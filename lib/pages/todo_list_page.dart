@@ -70,7 +70,7 @@ class _TodoListPageState extends State<TodoListPage> {
                   return _buildEmptyState();
                 }
 
-                // 4. DATA AMAN, TAMPILKAN LISTVIEW
+                //? 4. DATA AMAN, TAMPILKAN LISTVIEW
                 // Ini sama dengan 'snapshot.hasData'
                 return ListView.builder(
                   itemCount: viewModel.filteredTodos.length,
@@ -119,8 +119,12 @@ class _TodoListPageState extends State<TodoListPage> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // jika kosong, jangan simpan
                 if (textController.text.isEmpty) return;
-                await viewModel.addTodo(textController.text);
+                await viewModel.addTodo(
+                  textController.text,
+                ); // Panggil VM global
+                // Tutup dialog
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
               },
               child: Text('Simpan'),

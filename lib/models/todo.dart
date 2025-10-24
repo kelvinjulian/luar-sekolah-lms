@@ -36,7 +36,7 @@ List<Todo> todoListFromJson(String str) {
       .toList();
 }
 
-//? 4. CLASS TODO (SESUAI API ANDA)
+//? 4. CLASS TODO (SESUAI API)
 class Todo {
   final String? id;
   final String text;
@@ -45,6 +45,7 @@ class Todo {
   Todo({this.id, required this.text, required this.completed});
 
   //? 5. 'fromJson' (Server -> Aplikasi)
+  // mengubah data JSON mentah (map) dari server menajdi objek Todo yang bisa digunakan aplikasi
   factory Todo.fromJson(Map<String, dynamic> json) {
     return Todo(
       id: json['id'] as String?,

@@ -7,7 +7,7 @@ class TodoService {
   final String _baseUrl =
       'https://ls-lms.zoidify.my.id/api/todos'; // URL API lms luar sekolah (yang baru)
 
-  //? 1. PERBAIKAN AUTENTIKASI (KUNCI ANDA)
+  //? 1. TOKEN AUTENTIKASI (KUNCI)
   final String _authToken = "default-token";
 
   //? 2. FUNGSI PRIBADI UNTUK MEMBUAT HEADERS
@@ -40,15 +40,17 @@ class TodoService {
   //? 4. CREATE (POST)
   Future<Todo> createTodo(String text) async {
     try {
+      //? Buat objek Todo baru
       final newTodo = Todo(text: text, completed: false);
 
+      //? Kirim ke API
       final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: _getHeaders(),
-        body: jsonEncode(newTodo.toJson()),
+        Uri.parse(_baseUrl), //? URL API
+        headers: _getHeaders(), //? Gunakan headers dengan token
+        body: jsonEncode(newTodo.toJson()), //? Ubah ke JSON
       );
 
-      // PERBAIKAN STATUS CODE (201 ATAU 200)
+      //? STATUS CODE (201 ATAU 200)
       if (response.statusCode == 201 || response.statusCode == 200) {
         return Todo.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
       } else {

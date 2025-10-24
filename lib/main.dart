@@ -28,11 +28,9 @@ void main() {
   //? 3. AKTIFKAN PERBAIKAN SSL
   HttpOverrides.global = MyHttpOverrides();
 
-  //* ==========================================================
-  //* --- BUNGKUS runApp DENGAN PROVIDER ---
-  //* ==========================================================
+  //? 4. JALANKAN APLIKASI DENGAN PROVIDER
   runApp(
-    //? 4. BUAT VIEWMODEL SECARA GLOBAL
+    //? 5. BUAT VIEWMODEL SECARA GLOBAL
     ChangeNotifierProvider(
       // Kita buat ViewModel di sini agar global
       // dan langsung panggil fetchTodos() saat app pertama kali dibuka
