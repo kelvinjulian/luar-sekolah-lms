@@ -5,7 +5,7 @@ import '../models/todo.dart'; // Impor model baru
 
 class TodoService {
   final String _baseUrl =
-      'https://luar-sekolah-lms-luar-sekolah-xoowhf-a8822a-103-196-152-12.traefik.me/api/todos'; // URL API lms luar sekolah
+      'https://ls-lms.zoidify.my.id/api/todos'; // URL API lms luar sekolah (yang baru)
 
   //? 1. PERBAIKAN AUTENTIKASI (KUNCI ANDA)
   final String _authToken = "default-token";
