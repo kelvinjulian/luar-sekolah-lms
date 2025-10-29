@@ -211,7 +211,7 @@ class _ClassPageState extends State<ClassPage> {
               _showDeleteConfirmationDialog(classData);
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
