@@ -1,163 +1,98 @@
 // lib/pages/class_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Digunakan untuk navigasi antar halaman
-import '../widgets/custom_cards.dart'; // Mengimpor widget kartu kustom kita, termasuk AdminCourseCard
+import 'package:get/get.dart'; // Tetap perlukan GetX untuk Obx dan Controller
+import '../widgets/custom_cards.dart';
+import '../controllers/class_controller.dart';
+import '../models/course_model.dart';
+import 'class_form_page.dart';
 
-// Definisi warna yang konsisten agar mudah diubah di satu tempat
 const Color lsGreen = Color(0xFF0DA680);
-const Color tagBlue = Color.fromARGB(255, 37, 146, 247);
-const Color tagGreen = Color(0xFF0DA680);
 
-// ClassPage diubah menjadi StatefulWidget agar bisa menyimpan dan mengelola data (state)
-// yang bisa berubah, seperti daftar kelas.
-class ClassPage extends StatefulWidget {
+class ClassPage extends StatelessWidget {
   const ClassPage({super.key});
 
   @override
-  State<ClassPage> createState() => _ClassPageState();
-}
-
-class _ClassPageState extends State<ClassPage> {
-  //? Ini adalah "database sementara" kita.
-  // Sebuah List yang berisi Map, di mana setiap Map adalah satu data kelas.
-  // Di aplikasi nyata, data ini akan diambil dari server/API.
-  final List<Map<String, dynamic>> _allClasses = [
-    {
-      'id': '1',
-      'nama': "Teknik Pemilahan dan Pengolahan Sampah",
-      'harga': "1500000",
-      'kategori': "SPL",
-      'thumbnail': "assets/images/course1.png",
-      'tags': ["Prakerja", "SPL"],
-      'tagColors': [tagBlue, tagGreen],
-    },
-    {
-      'id': '2',
-      'nama': "Meningkatkan Pertumbuhan Tanaman untuk Petani Terampil",
-      'harga': "1500000",
-      'kategori': "Prakerja",
-      'thumbnail': "assets/images/course2.png",
-      'tags': ["Prakerja"],
-      'tagColors': [tagBlue],
-    },
-  ];
-
-  //* Fungsi ini dibuat terpisah untuk menampilkan dialog konfirmasi
-  // sebelum melakukan aksi hapus. Ini adalah praktik UX yang baik.
-  Future<void> _showDeleteConfirmationDialog(
-    Map<String, dynamic> classData,
-  ) async {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Konfirmasi Hapus'),
-          content: Text(
-            'Apakah Anda yakin ingin menghapus kelas "${classData['nama']}"?',
-          ),
-          actions: <Widget>[
-            // Tombol untuk membatalkan aksi
-            TextButton(
-              child: const Text('Batal'),
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(), // Cukup tutup dialog
-            ),
-            // Tombol untuk mengkonfirmasi aksi hapus
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Ya, Hapus'),
-              onPressed: () {
-                // setState() memberitahu Flutter bahwa ada perubahan data,
-                // sehingga UI perlu di-render ulang.
-                setState(() {
-                  // Hapus item dari list _allClasses yang memiliki 'id' yang sama.
-                  _allClasses.removeWhere(
-                    (item) => item['id'] == classData['id'],
-                  );
-                });
-                Navigator.of(
-                  dialogContext,
-                ).pop(); // Tutup dialog setelah menghapus
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  //* Method build() adalah tempat semua UI untuk halaman ini dibuat.
-  @override
   Widget build(BuildContext context) {
-    // DefaultTabController adalah widget yang mengatur state untuk TabBar
-    // dan TabBarView, membuatnya saling terhubung.
+    final ClassController controller = Get.put(ClassController());
+
     return DefaultTabController(
-      length: 3, // Jumlah tab yang kita miliki
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
+          // ... (AppBar Anda tetap sama) ...
           title: const Text(
             'Manajemen Kelas',
             style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.white,
           elevation: 1.0,
-          bottom: const TabBar(
+          bottom: TabBar(
+            onTap: controller.updateTab,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             labelColor: lsGreen,
             unselectedLabelColor: Colors.grey,
             indicatorColor: lsGreen,
-            tabs: [
+            tabs: const [
               Tab(text: 'Kelas Terpopuler'),
               Tab(text: 'Kelas SPL'),
               Tab(text: 'Kelas Lainnya'),
             ],
           ),
         ),
-        // TabBarView berisi konten untuk setiap tab. Urutannya harus sama dengan
-        // urutan Tab di dalam TabBar.
         body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildClassList(context), // Konten untuk tab pertama
-            _buildClassList(
-              context,
-            ), // Konten untuk tab kedua (bisa difilter nanti)
-            const Center(
-              child: Text('Belum ada kelas lainnya'),
-            ), // Konten untuk tab ketiga
+            _buildClassList(context, controller),
+            _buildClassList(context, controller),
+            _buildClassList(context, controller),
           ],
         ),
       ),
     );
   }
 
-  //* Ini adalah widget helper yang dibuat terpisah untuk membangun UI daftar kelas.
-  //? Tujuannya agar method build() utama tetap bersih dan mudah dibaca.
-  Widget _buildClassList(BuildContext context) {
+  Widget _buildClassList(BuildContext context, ClassController controller) {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
         // ======================
-        //* Tambah Kelas Button
+        //* Tombol Tambah Kelas
         // ======================
         ElevatedButton.icon(
-          //? Fungsi onPressed dijadikan 'async' agar kita bisa menggunakan 'await'.
           onPressed: () async {
-            //? 'await context.push(...)' akan membuka halaman form dan MENUNGGU
-            //? sampai halaman tersebut ditutup dan mengembalikan data.
-            final result = await context.push('/class/form');
+            final result = await showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (BuildContext sheetContext) {
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  child: const ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20.0),
+                      topRight: Radius.circular(20.0),
+                    ),
+                    child: ClassFormPage(),
+                  ),
+                );
+              },
+            );
 
-            //? Setelah kembali dari form, kita cek apakah ada data yang dikembalikan.
-            //? Pengguna bisa saja menekan 'Kembali' tanpa menyimpan, maka result akan null.
+            //? PERBAIKAN: Tampilkan SnackBar DI SINI
             if (result != null && result is Map<String, dynamic>) {
-              setState(() {
-                // Jika ada data baru, tambahkan ke list _allClasses.
-                // UI akan otomatis diperbarui.
-                _allClasses.add(result);
-              });
+              controller.addClass(result);
+              // Tampilkan notifikasi setelah sheet tertutup
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Kelas baru berhasil ditambahkan!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             }
           },
+          // ... (Style tombol tetap sama)
           style: ElevatedButton.styleFrom(
             backgroundColor: lsGreen,
             foregroundColor: Colors.white,
@@ -171,45 +106,100 @@ class _ClassPageState extends State<ClassPage> {
         ),
         const SizedBox(height: 20),
 
-        //* Ini adalah cara dinamis untuk membuat daftar widget dari daftar data.
-        //* Operator '...' (spread) digunakan untuk memasukkan semua widget
-        //* yang dihasilkan oleh .map() ke dalam list children dari ListView.
-        ..._allClasses.map((classData) {
-          // Untuk setiap item 'classData' di dalam list '_allClasses',
-          //? kita buat satu widget AdminCourseCard.
-          return AdminCourseCard(
-            title: classData['nama'],
-            image: classData['thumbnail'],
-            //? Kita perlu melakukan casting (.cast<String>()) untuk memastikan tipe datanya benar
-            tags: (classData['tags'] as List<dynamic>).cast<String>(),
-            tagColors: (classData['tagColors'] as List<dynamic>).cast<Color>(),
-            price: "Rp ${classData['harga']}",
-            onEdit: () async {
-              // Logikanya sama seperti 'Tambah', tapi kita mengirim 'classData'
-              // melalui 'extra' agar form berjalan dalam mode edit.
-              final result = await context.push(
-                '/class/form',
-                extra: classData,
-              );
+        // ... (Search Bar tetap sama) ...
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: TextField(
+            onChanged: controller.updateSearchQuery,
+            decoration: InputDecoration(
+              labelText: 'Cari nama kelas...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
 
-              if (result != null && result is Map<String, dynamic>) {
-                setState(() {
-                  // Jika ada data yang dikembalikan (perubahan disimpan),
-                  // kita cari item yang lama di dalam list berdasarkan 'id'.
-                  final index = _allClasses.indexWhere(
-                    (item) => item['id'] == result['id'],
-                  );
-                  if (index != -1) {
-                    // Lalu kita ganti data lama dengan data baru (hasil editan).
-                    _allClasses[index] = result;
-                  }
-                });
-              }
-            },
-            onDelete: () {
-              // Memanggil dialog konfirmasi sebelum menghapus data.
-              _showDeleteConfirmationDialog(classData);
-            },
+        // ... (Obx, Empty State tetap sama) ...
+        Obx(() {
+          final List<CourseModel> classes = controller.filteredClasses;
+
+          if (classes.isEmpty) {
+            return Center(
+              // ... (Kode Empty State tetap sama)
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 50.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Tidak ada kelas ditemukan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Text(
+                      'Coba ubah filter atau kata kunci pencarian Anda.',
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Daftar Kelas
+          return Column(
+            children: [
+              ...classes.map((course) {
+                return AdminCourseCard(
+                  title: course.nama,
+                  image: course.thumbnail,
+                  tags: course.tags,
+                  tagColors: course.tagColors,
+                  price: "Rp ${course.harga}",
+                  onEdit: () async {
+                    final result = await showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (BuildContext sheetContext) {
+                        return Container(
+                          height: MediaQuery.of(context).size.height * 0.85,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20.0),
+                              topRight: Radius.circular(20.0),
+                            ),
+                            child: ClassFormPage(initialData: course.toMap()),
+                          ),
+                        );
+                      },
+                    );
+
+                    //? PERBAIKAN: Tampilkan SnackBar DI SINI
+                    if (result != null && result is Map<String, dynamic>) {
+                      controller.updateClass(result);
+                      // Tampilkan notifikasi setelah sheet tertutup
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Perubahan berhasil disimpan!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  onDelete: () {
+                    controller.showDeleteConfirmation(course);
+                  },
+                );
+              }),
+            ],
           );
         }),
       ],

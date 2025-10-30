@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 // Import halaman-halaman yang akan menjadi 'tab'
 import 'main_content_page.dart';
 import 'account_page.dart';
-import 'class_page.dart';
-
-// Import Halaman Todo List
-import 'todo_list_page.dart';
+import 'class_page.dart'; // Halaman GetX kita
+import 'todo_list_page.dart'; // Halaman Provider (Jangan Diubah)
 
 // Definisi Warna
 const Color lsGreen = Color(0xFF0DA680);
@@ -24,14 +22,16 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
+  //? --- PERUBAHAN DI SINI ---
   final List<Widget> _pages = <Widget>[
     const MainContentPage(), // 0
-    const ClassPage(), // 1
+    ClassPage(), // 1 <-- HAPUS 'const' DARI SINI
     const Center(child: Text("Halaman Kelasku")), // 2
     const Center(child: Text("Halaman KoinLS")), // 3
-    const TodoListPage(), //? 4 <-- Halaman Todo
+    const TodoListPage(), // 4 <-- BIARKAN 'const' (INI HALAMAN TODO/PROVIDER)
     const AccountPage(), // 5
   ];
+  //? --------------------------
 
   @override
   void initState() {
@@ -83,10 +83,7 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Kelas"),
           BottomNavigationBarItem(icon: Icon(Icons.school), label: "Kelasku"),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: "KoinLS"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: "Todo", //? <-- Tab Baru
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Todo"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Akun"),
         ],
       ),
