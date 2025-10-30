@@ -1,15 +1,15 @@
 // lib/pages/class_form_page.dart
 
 import 'package:flutter/material.dart';
-// import 'package:get/get.dart'; // <-- HAPUS IMPORT GET
+// import 'package:get/get.dart'; // <-- Hapus import GetX
 import '../widgets/input_field.dart';
 import '../models/course_model.dart';
 
 // Definisi warna
 const Color lsGreen = Color(0xFF0DA680);
 const Color lsGreenLight = Color(0xFF18C093);
-// tagBlue dan tagGreen diambil dari course_model.dart
 
+// Halaman ini TETAP StatefulWidget karena butuh state internal untuk form
 class ClassFormPage extends StatefulWidget {
   final Map<String, dynamic>? initialData;
   const ClassFormPage({super.key, this.initialData});
@@ -19,7 +19,7 @@ class ClassFormPage extends StatefulWidget {
 }
 
 class _ClassFormPageState extends State<ClassFormPage> {
-  // State internal form (tetap sama)
+  // State internal untuk form
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _namaController;
   late TextEditingController _hargaController;
@@ -27,10 +27,10 @@ class _ClassFormPageState extends State<ClassFormPage> {
   bool _isPrakerja = false;
   bool _isSPL = false;
 
+  // Logika initState ini tetap sama seperti kode asli Anda
   @override
   void initState() {
     super.initState();
-    // Logika initState Anda (tetap sama)
     _namaController = TextEditingController();
     _hargaController = TextEditingController();
 
@@ -47,20 +47,19 @@ class _ClassFormPageState extends State<ClassFormPage> {
     }
   }
 
+  // Logika dispose juga tetap sama
   @override
   void dispose() {
-    // Logika dispose Anda (tetap sama)
     _namaController.dispose();
     _hargaController.dispose();
     super.dispose();
   }
 
+  // Fungsi ini dipanggil saat tombol 'Simpan Perubahan' ditekan
   void _simpanPerubahan() {
     if (_formKey.currentState!.validate()) {
-      // Logika pembuatan tags (tetap sama)
       List<String> tags = [];
       List<Color> tagColors = [];
-
       if (_isPrakerja) {
         tags.add('Prakerja');
         tagColors.add(tagBlue);
@@ -74,7 +73,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
         tagColors.add(Colors.purple);
       }
 
-      // Logika dataKelas (tetap sama)
       final dataKelas = {
         'id':
             widget.initialData?['id'] ??
@@ -87,28 +85,28 @@ class _ClassFormPageState extends State<ClassFormPage> {
         'tagColors': tagColors,
       };
 
-      //? PERBAIKAN: GANTI 'Get.snackbar' DENGAN 'ScaffoldMessenger'
-      //? Kita akan pindahkan ini ke 'class_page.dart'
-      //? agar snackbar tidak hilang saat bottom sheet ditutup.
-
-      //? PERBAIKAN: GANTI 'Get.back' DENGAN 'Navigator.pop'
+      //? PERBAIKAN CRASH: Ganti 'Get.back()' dengan 'Navigator.pop()'
+      // Ini adalah perintah Flutter asli untuk menutup halaman/bottomsheet
+      // dan "mengembalikan" data ('dataKelas') ke halaman sebelumnya.
       Navigator.pop(context, dataKelas);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // UI (Material, SafeArea, Form, ListView) tetap sama
+    //? PERUBAHAN UI: Ganti 'Scaffold' dengan 'Material'
+    // Kenapa? Agar bisa ditampilkan di dalam BottomSheet.
     return Material(
       color: Colors.white,
       child: SafeArea(
         top: false,
         child: Form(
           key: _formKey,
+          // Dibungkus ListView agar bisa di-scroll
           child: ListView(
             padding: const EdgeInsets.all(24.0),
             children: [
-              // Judul manual (tetap sama)
+              //? TAMBAHAN UI: Judul Manual (pengganti AppBar)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 24.0),
                 child: Text(
@@ -124,7 +122,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 ),
               ),
 
-              // ... (Semua InputField dan Checkbox Anda tetap sama) ...
+              // --- SISA FORM DI BAWAH INI SAMA PERSIS DENGAN KODE ASLI ANDA ---
               const Text(
                 "Informasi Kelas",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -234,7 +232,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
               ),
               const SizedBox(height: 40),
 
-              // Tombol Simpan (tetap sama)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -252,11 +249,10 @@ class _ClassFormPageState extends State<ClassFormPage> {
               ),
               const SizedBox(height: 12),
 
-              // Tombol Batal
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  //? PERBAIKAN: GANTI 'Get.back' DENGAN 'Navigator.pop'
+                  //? PERBAIKAN CRASH: Ganti 'Get.back()' dengan 'Navigator.pop()'
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: lsGreenLight,
