@@ -1,19 +1,19 @@
 // lib/main.dart
 
-// 1. Import SSL & PROVIDER
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io'; // Import untuk HttpOverrides
-import 'package:provider/provider.dart'; // <-- IMPORT PROVIDER
-import 'viewmodels/todo_viewmodel.dart'; // <-- IMPORT VIEWMODEL
+import 'dart:io';
 
-// Import file konfigurasi router
+// 1. Import Provider dan GetX
+import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+
+// 2. Import ViewModel (Provider) dan Router
+// Pastikan path ini benar sesuai struktur folder Anda
+import 'viewmodels/todo_viewmodel.dart';
 import 'config/router.dart';
 
-//? 2. CLASS UNTUK MEMPERBAIKI ERROR SSL
-// ==========================================================
-//* CLASS UNTUK MENGATASI ERROR SSL CERTIFICATE
-// ==========================================================
+// Class MyHttpOverrides (Tetap sama)
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -22,23 +22,18 @@ class MyHttpOverrides extends HttpOverrides {
           (X509Certificate cert, String host, int port) => true;
   }
 }
-// ==========================================================
 
 void main() {
-  //? 3. AKTIFKAN PERBAIKAN SSL
   HttpOverrides.global = MyHttpOverrides();
 
-  //? 4. JALANKAN APLIKASI DENGAN PROVIDER
+  // 3. Daftarkan Provider untuk 'Todo' (seperti kode asli Anda)
+  // Ini tidak akan kita ubah.
   runApp(
-    //? 5. BUAT VIEWMODEL SECARA GLOBAL
     ChangeNotifierProvider(
-      // Kita buat ViewModel di sini agar global
-      // dan langsung panggil fetchTodos() saat app pertama kali dibuka
       create: (context) => TodoViewModel()..fetchTodos(),
       child: const LmsApp(), // Aplikasi utama
     ),
   );
-  // ==========================================================
 }
 
 class LmsApp extends StatelessWidget {
@@ -46,9 +41,14 @@ class LmsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      //? Hubungkan ke router
-      routerConfig: router,
+    // 4. Gunakan GetMaterialApp.router agar GetX bisa dipakai
+    //    GetMaterialApp akan menjadi 'child' dari ChangeNotifierProvider
+    return GetMaterialApp.router(
+      // 5. PERBAIKAN untuk 'routerConfig' build error
+      //    Gunakan 3 properti ini, BUKAN 'routerConfig'
+      routeInformationProvider: router.routeInformationProvider,
+      routeInformationParser: router.routeInformationParser,
+      routerDelegate: router.routerDelegate,
 
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
