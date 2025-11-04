@@ -1,19 +1,18 @@
 // lib/main.dart
 
-// 1. Import SSL & PROVIDER
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io'; // Import untuk HttpOverrides
-import 'package:provider/provider.dart'; // <-- IMPORT PROVIDER
-import 'viewmodels/todo_viewmodel.dart'; // <-- IMPORT VIEWMODEL
+import 'dart:io';
 
-// Import file konfigurasi router
-import 'config/router.dart';
+// 1. Kita impor kedua state management
+import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 
-//? 2. CLASS UNTUK MEMPERBAIKI ERROR SSL
-// ==========================================================
-//* CLASS UNTUK MENGATASI ERROR SSL CERTIFICATE
-// ==========================================================
+// 2. Impor 'otak' (ViewModel) dari Todo dan file router kita
+import 'viewmodels/todo_viewmodel.dart';
+import 'config/router.dart'; // Impor go_router
+
+// Class MyHttpOverrides (Ini tetap sama, untuk atasi error SSL)
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -22,23 +21,19 @@ class MyHttpOverrides extends HttpOverrides {
           (X509Certificate cert, String host, int port) => true;
   }
 }
-// ==========================================================
 
 void main() {
-  //? 3. AKTIFKAN PERBAIKAN SSL
   HttpOverrides.global = MyHttpOverrides();
 
-  //? 4. JALANKAN APLIKASI DENGAN PROVIDER
+  // 3. Daftarkan Provider untuk 'Todo' di level tertinggi
+  // Ini adalah kode asli Anda, dan kita biarkan seperti ini
+  // agar TodoViewModel tetap berfungsi di seluruh aplikasi.
   runApp(
-    //? 5. BUAT VIEWMODEL SECARA GLOBAL
     ChangeNotifierProvider(
-      // Kita buat ViewModel di sini agar global
-      // dan langsung panggil fetchTodos() saat app pertama kali dibuka
       create: (context) => TodoViewModel()..fetchTodos(),
-      child: const LmsApp(), // Aplikasi utama
+      child: const LmsApp(), // Jalankan aplikasi utama kita
     ),
   );
-  // ==========================================================
 }
 
 class LmsApp extends StatelessWidget {
@@ -46,10 +41,20 @@ class LmsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      //? Hubungkan ke router
-      routerConfig: router,
+    // 4. Gunakan GetMaterialApp.router
+    // Kita ganti MaterialApp.router menjadi GetMaterialApp.router
+    // agar semua fitur GetX bisa aktif dan berfungsi.
+    // GetMaterialApp ini menjadi 'child' dari ChangeNotifierProvider di atas.
+    return GetMaterialApp.router(
+      // 5. PERBAIKAN PENTING (Build Error Fix)
+      // Awalnya kita pakai `routerConfig: router`, tapi itu bikin error.
+      // Solusinya adalah memberikan 3 properti ini secara manual
+      // agar GetX dan GoRouter bisa "berdamai".
+      routeInformationProvider: router.routeInformationProvider,
+      routeInformationParser: router.routeInformationParser,
+      routerDelegate: router.routerDelegate,
 
+      // Konfigurasi standar, tidak ada yang berubah
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
