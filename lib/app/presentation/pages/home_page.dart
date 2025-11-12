@@ -1,11 +1,13 @@
-// lib/pages/home_page.dart
+// lib/app/presentation/pages/home_page.dart
 import 'package:flutter/material.dart';
 
+// --- VERIFIKASI IMPORT ---
 // Import halaman-halaman yang akan menjadi 'tab'
 import 'main_content_page.dart';
 import 'account_page.dart';
-import 'class_page.dart'; // Halaman "Kelas" (GetX) kita yang baru
-import 'todo_list_page.dart'; // Halaman "Todo" (Provider) kita yang lama
+import 'course/class_page.dart';
+import 'todo/todo_list_page.dart';
+// -------------------------
 
 // Definisi Warna
 const Color lsGreen = Color(0xFF0DA680);
@@ -22,26 +24,23 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
-  //? --- PERUBAHAN PENTING ADA DI SINI ---
+  //? --- PERBAIKAN DI SINI ---
   final List<Widget> _pages = <Widget>[
-    const MainContentPage(), // 0. Halaman statis, boleh pakai 'const'
-    // 1. PENTING: Kita HAPUS 'const' dari ClassPage()
-    // Kenapa? Halaman 'ClassPage' sekarang menggunakan GetX dan bersifat REAKTIF.
-    // Widget yang reaktif tidak boleh 'const' (konstan/tetap).
-    ClassPage(),
+    const MainContentPage(), // 0. Halaman statis, boleh 'const'
+    //? 1. HAPUS 'const' dari ClassPage()
+    //?    ClassPage() adalah widget reaktif GetX
+    ClassPage(), // <-- Tidak ada 'const'
 
     const Center(child: Text("Halaman Kelasku")), // 2
     const Center(child: Text("Halaman KoinLS")), // 3
-    // 4. Halaman Todo kita BIARKAN 'const'.
-    // Kenapa? Karena dia pakai Provider yang state-nya diangkat ke main.dart.
-    const TodoListPage(),
-
-    const AccountPage(), // 5
+    //? 4. HAPUS 'const' dari TodoListPage()
+    //?    TodoListPage() adalah widget reaktif GetX (Get.find)
+    TodoListPage(), // <-- Tidak ada 'const'
+    //? 5. HAPUS 'const' dari AccountPage()
+    //?    AccountPage() adalah StatefulWidget
+    AccountPage(), // <-- Tidak ada 'const'
   ];
   //? -----------------------------------
-
-  // Sisa file ini adalah logika standar untuk BottomNavigationBar
-  // dan PageView, tidak ada yang diubah.
 
   @override
   void initState() {
@@ -71,6 +70,12 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: _selectedIndex == 0 ? lsGreen : backgroundLight,
       body: SafeArea(
+        //? PENTING: Ubah SafeArea agar tidak 'cut-off'
+        //? di halaman Beranda (yang punya header hijau)
+        top:
+            _selectedIndex !=
+            0, // Hanya aktifkan SafeArea-top jika BUKAN tab Beranda
+        bottom: false, // Matikan SafeArea-bottom (sudah dihandle BottomNavBar)
         child: PageView(
           controller: _pageController,
           onPageChanged: (index) {

@@ -1,33 +1,30 @@
-// lib/services/todo_service.dart
+// lib/app/data/datasources/todo_remote_data_source.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/todo.dart'; // Impor model baru
+import '../../domain/entities/todo.dart'; // <-- Import entity (yang punya helper 'todoListFromJson')
 
-class TodoService {
-  final String _baseUrl =
-      'https://ls-lms.zoidify.my.id/api/todos'; // URL API lms luar sekolah (yang baru)
+// Ini BUKAN implementasi interface, ini adalah class konkret
+class TodoRemoteDataSource {
+  final String _baseUrl = 'https://ls-lms.zoidify.my.id/api/todos';
+  final String _authToken = "default-token"; // Ganti dengan token asli jika ada
 
-  //? 1. TOKEN AUTENTIKASI (KUNCI)
-  final String _authToken = "default-token";
-
-  //? 2. FUNGSI PRIBADI UNTUK MEMBUAT HEADERS
   Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer $_authToken', // Selalu kirim token
+      'Authorization': 'Bearer $_authToken',
     };
   }
 
-  //? 3. READ (GET)
+  // Perhatikan: tidak ada lagi '@override'
   Future<List<Todo>> fetchTodos() async {
     try {
       final response = await http.get(
         Uri.parse(_baseUrl),
-        headers: _getHeaders(), // Selalu pakai headers
+        headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        // Kirim ke model untuk di-parsing
+        // Panggil helper 'todoListFromJson' dari todo.dart
         return todoListFromJson(response.body);
       } else {
         throw Exception('Gagal memuat data. Status: ${response.statusCode}');
@@ -37,20 +34,15 @@ class TodoService {
     }
   }
 
-  //? 4. CREATE (POST)
   Future<Todo> createTodo(String text) async {
     try {
-      //? Buat objek Todo baru
       final newTodo = Todo(text: text, completed: false);
-
-      //? Kirim ke API
       final response = await http.post(
-        Uri.parse(_baseUrl), //? URL API
-        headers: _getHeaders(), //? Gunakan headers dengan token
-        body: jsonEncode(newTodo.toJson()), //? Ubah ke JSON
+        Uri.parse(_baseUrl),
+        headers: _getHeaders(),
+        body: jsonEncode(newTodo.toJson()),
       );
 
-      //? STATUS CODE (201 ATAU 200)
       if (response.statusCode == 201 || response.statusCode == 200) {
         return Todo.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
       } else {
@@ -61,7 +53,6 @@ class TodoService {
     }
   }
 
-  //? 6. UPDATE (PUT)
   Future<void> updateTodo(String id, Todo todo) async {
     try {
       final response = await http.put(
@@ -70,7 +61,6 @@ class TodoService {
         body: jsonEncode(todo.toJson()),
       );
 
-      // (Edit/Update biasanya mengembalikan 200 OK)
       if (response.statusCode != 200) {
         throw Exception(
           'Gagal memperbarui todo. Status: ${response.statusCode}',
@@ -81,7 +71,6 @@ class TodoService {
     }
   }
 
-  //? 7. DELETE (DELETE)
   Future<void> deleteTodo(String id) async {
     try {
       final response = await http.delete(
@@ -89,7 +78,6 @@ class TodoService {
         headers: _getHeaders(),
       );
 
-      // (Delete bisa 200 OK atau 204 No Content)
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception('Gagal menghapus todo. Status: ${response.statusCode}');
       }

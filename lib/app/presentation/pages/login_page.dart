@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart'; // Import go_router untuk navigasi
+//? --- PERBAIKAN 1: Hapus go_router, import Get ---
+// import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 
 // Import widget-widget custom
 import '../widgets/input_field.dart';
 // import '../widgets/checklist_item.dart';
 
-/// ================================
-///* HALAMAN LOGIN (VERSI REFRACTOR)
-/// ================================
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -19,22 +18,14 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // =========================
-  //* CONTROLLER & STATE
-  // =========================
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isPasswordVisible = false;
   bool isFormFilled = false;
-
-  // State untuk animasi tombol
   bool _isLoading = false;
   bool _isSuccess = false;
 
-  // =========================
-  //* FUNGSI & LOGIKA
-  // =========================
   void checkFormFilled() {
     setState(() {
       isFormFilled =
@@ -42,9 +33,6 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // =========================
-  //* LIFECYCLE METHODS
-  // =========================
   @override
   void initState() {
     super.initState();
@@ -59,23 +47,17 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // =========================
-  //* BUILD METHOD
-  // =========================
   @override
   Widget build(BuildContext context) {
-    // Tombol aktif HANYA JIKA form sudah terisi
     bool isButtonActive = isFormFilled;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          // ... (UI Logo, Judul, Deskripsi, Tombol Google, Divider... tidak berubah) ...
           const SizedBox(height: 40),
-
-          // =========================
-          //* LOGO
-          // =========================
           Align(
             alignment: Alignment.centerLeft,
             child: SvgPicture.asset(
@@ -83,12 +65,7 @@ class _LoginPageState extends State<LoginPage> {
               height: 48,
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // =========================
-          //* JUDUL & DESKRIPSI
-          // =========================
           Text(
             "Masuk ke Akunmu untuk Lanjut Akses ke Luarsekolah",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -106,10 +83,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 20),
-
-          // =========================
-          //* TOMBOL LOGIN DENGAN GOOGLE
-          // =========================
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -122,13 +95,13 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              onPressed: () {}, // Aksi belum diimplementasi
+              onPressed: () {},
               icon: SvgPicture.asset(
                 "assets/icons/google-icon.svg",
                 height: 20,
               ),
               label: Text(
-                "Masuk dengan Google", // Diubah menjadi Masuk
+                "Masuk dengan Google",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -138,10 +111,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 15),
-
-          // =========================
-          //* DIVIDER
-          // =========================
           Row(
             children: [
               const Expanded(
@@ -165,9 +134,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: 20),
 
-          // =========================
-          //* FORM LOGIN
-          // =========================
+          // ... (UI Form, InputField, Lupa password... tidak berubah) ...
           Form(
             key: _formKey,
             child: Column(
@@ -181,7 +148,6 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Email tidak boleh kosong';
                     }
-                    // Validasi format email sederhana
                     if (!RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(value)) {
                       return 'Format email tidak valid';
                     }
@@ -217,9 +183,7 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
-                    onTap: () {
-                      // TODO Tambahkan logika untuk Lupa Password
-                    },
+                    onTap: () {},
                     child: Text(
                       "Lupa password?",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -242,28 +206,22 @@ class _LoginPageState extends State<LoginPage> {
           // =========================
           SizedBox(
             width: double.infinity,
-            height: 54, // Tinggi tetap agar layout stabil
+            height: 54,
             child: ElevatedButton(
-              //? Tampilkan animasi loading ketika isLoading true
               onPressed: isButtonActive && !_isLoading
                   ? () async {
-                      // Validasi form sebelum melanjutkan
                       if (_formKey.currentState!.validate()) {
-                        // 1. Mulai animasi loading
                         setState(() {
                           _isLoading = true;
                         });
 
-                        // 2. Simulasikan proses login (misal: 2 detik)
                         await Future.delayed(const Duration(seconds: 2));
 
-                        // 3. Tandai sukses dan hentikan loading
                         setState(() {
                           _isLoading = false;
                           _isSuccess = true;
                         });
 
-                        // 4. Tampilkan pesan sukses
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -276,22 +234,17 @@ class _LoginPageState extends State<LoginPage> {
                           );
                         }
 
-                        // 5. Beri jeda agar user melihat animasi & pesan
                         await Future.delayed(
                           const Duration(milliseconds: 1500),
                         );
 
-                        // 6. Arahkan ke Halaman Home
-                        if (mounted) {
-                          // Gunakan context.go agar user tidak bisa kembali ke halaman login
-                          // ignore: use_build_context_synchronously
-                          context.go('/home');
-                        }
+                        //? --- PERBAIKAN 2: Ganti context.go ke Get.offAllNamed ---
+                        //? 'offAllNamed' pindah halaman dan hapus semua halaman sebelumnya
+                        //? (agar tidak bisa 'back' ke login)
+                        Get.offAllNamed('/home');
                       }
                     }
                   : null,
-
-              // Tombol aktif hanya jika semua kriteria terpenuhi
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isSuccess
                     ? Colors.green
@@ -331,8 +284,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Gunakan go_router untuk pindah halaman
-                      context.push('/register');
+                      //? --- PERBAIKAN 3: Ganti context.push ke Get.toNamed ---
+                      Get.toNamed('/register');
                     },
                     child: const Text(
                       "Daftar sekarang",

@@ -1,27 +1,62 @@
-// lib/pages/class_page.dart
+// lib/app/presentation/pages/course/class_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // Kita tetap butuh GetX untuk Obx dan Controller
-import '../widgets/custom_cards.dart';
-import '../controllers/class_controller.dart';
-import '../models/course_model.dart';
-import 'class_form_page.dart';
+import 'package:get/get.dart';
+
+// --- VERIFIKASI IMPORT ---
+import '../../widgets/custom_cards.dart';
+import '../../controllers/class_controller.dart';
+import '../../../domain/entities/course.dart';
+import './class_form_page.dart';
+// -------------------------
 
 const Color lsGreen = Color(0xFF0DA680);
 
-// 1. Diubah dari StatefulWidget -> StatelessWidget
-// Kenapa? Karena semua data ('state') sudah pindah ke ClassController
 class ClassPage extends StatelessWidget {
   const ClassPage({super.key});
 
+  //? --- PERBAIKAN DI SINI ---
+  //? Fungsi ini sekarang diperbaiki untuk menghapus '0x'
+  //? dengan benar sebelum mem-parsing warnanya.
+  Color _hexToColor(String hexCode) {
+    // 1. Bersihkan string dari prefiks yang umum
+    final String cleanHex = hexCode
+        .replaceAll('0x', '')
+        .replaceAll('0X', '')
+        .replaceAll('#', '');
+
+    String finalHex;
+    // 2. Cek panjangnya
+    if (cleanHex.length == 6) {
+      // Jika RRGGBB, tambahkan FF (alpha) di depan
+      finalHex = 'FF$cleanHex';
+    } else if (cleanHex.length == 8) {
+      // Jika AARRGGBB, sudah benar
+      finalHex = cleanHex;
+    } else {
+      // Format tidak dikenal, kembalikan abu-abu
+      return Colors.grey;
+    }
+
+    // 3. Parse string hex menjadi integer
+    try {
+      return Color(int.parse(finalHex, radix: 16));
+    } catch (e) {
+      // Jika parsing gagal, kembalikan abu-abu
+      return Colors.grey;
+    }
+  }
+  //? --------------------------
+
   @override
   Widget build(BuildContext context) {
-    // 2. 'Get.put()' adalah cara kita "menyalakan" atau "membuat" si 'otak'
-    final ClassController controller = Get.put(ClassController());
+    // 1. 'Get.find()' menemukan Controller yang sudah di-inject oleh Binding
+    final ClassController controller = Get.find<ClassController>();
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: Colors.white, // <-- Background putih (sesuai request)
         appBar: AppBar(
           title: const Text(
             'Manajemen Kelas',
@@ -30,8 +65,7 @@ class ClassPage extends StatelessWidget {
           backgroundColor: Colors.white,
           elevation: 1.0,
           bottom: TabBar(
-            // 3. FITUR BARU: Hubungkan 'onTap' ke controller
-            onTap: controller.updateTab,
+            onTap: controller.updateTab, // Hubungkan ke controller
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             labelColor: lsGreen,
@@ -45,7 +79,7 @@ class ClassPage extends StatelessWidget {
           ),
         ),
         body: TabBarView(
-          // 4. FITUR BARU: Matikan swipe agar controller jadi sumber data utama
+          // Matikan swipe agar controller jadi sumber data utama
           physics: const NeverScrollableScrollPhysics(),
           children: [
             _buildClassList(context, controller),
@@ -67,8 +101,6 @@ class ClassPage extends StatelessWidget {
         // ======================
         ElevatedButton.icon(
           onPressed: () async {
-            //? PERBAIKAN CRASH #1: Ganti 'Get.bottomSheet'
-            // Kita pakai 'showModalBottomSheet' (Flutter asli)
             final result = await showModalBottomSheet(
               context: context,
               isScrollControlled: true,
@@ -81,17 +113,17 @@ class ClassPage extends StatelessWidget {
                       topLeft: Radius.circular(20.0),
                       topRight: Radius.circular(20.0),
                     ),
+                    // ClassFormPage tidak perlu diubah, sudah benar
                     child: ClassFormPage(), // (Mode 'Tambah')
                   ),
                 );
               },
             );
 
-            //? PERBAIKAN CRASH #2: Logika setelah form ditutup
             if (result != null && result is Map<String, dynamic>) {
-              controller.addClass(result);
+              // Panggil fungsi controller (yang akan memanggil use case)
+              await controller.addClass(result);
 
-              // Tampilkan notifikasi (Snackbar Flutter asli)
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Kelas baru berhasil ditambahkan!'),
@@ -114,7 +146,7 @@ class ClassPage extends StatelessWidget {
         const SizedBox(height: 20),
 
         // ======================
-        //* 6. FITUR BARU: Search Bar
+        //* Search Bar
         // ======================
         Padding(
           padding: const EdgeInsets.only(bottom: 20.0),
@@ -131,14 +163,22 @@ class ClassPage extends StatelessWidget {
         ),
 
         // ======================
-        //* 7. WIDGET REAKTIF UTAMA
+        //* WIDGET REAKTIF UTAMA
         // ======================
-        // 'Obx' akan "mendengarkan" state .obs yang dibaca di dalamnya.
         Obx(() {
-          // 8. Ambil data YANG SUDAH DIFILTER dari controller
-          final List<CourseModel> classes = controller.filteredClasses;
+          // Tampilkan loading jika data masih diambil
+          if (controller.isLoading.value && controller.allClasses.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
 
-          // 9. FITUR BARU: Empty State
+          final List<Course> classes = controller.filteredClasses;
+
+          // Tampilkan empty state jika hasil filter/pencarian kosong
           if (classes.isEmpty) {
             return Center(
               child: Padding(
@@ -166,15 +206,21 @@ class ClassPage extends StatelessWidget {
             );
           }
 
-          // 10. Jika data ada, tampilkan list-nya
+          // Tampilkan list data
           return Column(
             children: [
               ...classes.map((course) {
+                // Konversi String Hex (dari Domain) ke Color (untuk UI)
+                // Sekarang ini akan berfungsi dengan benar
+                final List<Color> tagColors = course.tagColorsHex
+                    .map((hex) => _hexToColor(hex))
+                    .toList();
+
                 return AdminCourseCard(
                   title: course.nama,
                   image: course.thumbnail,
                   tags: course.tags,
-                  tagColors: course.tagColors,
+                  tagColors: tagColors, // Kirim List<Color>
                   price: "Rp ${course.harga}",
                   onEdit: () async {
                     final result = await showModalBottomSheet(
@@ -198,7 +244,7 @@ class ClassPage extends StatelessWidget {
                     );
 
                     if (result != null && result is Map<String, dynamic>) {
-                      controller.updateClass(result);
+                      await controller.updateClass(result);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Perubahan berhasil disimpan!'),
@@ -207,13 +253,10 @@ class ClassPage extends StatelessWidget {
                       );
                     }
                   },
-
-                  //? --- PERBAIKAN BUG DELETE ---
                   onDelete: () {
-                    // 11. Panggil fungsi di controller dan kirim 'context'
+                    // Panggil fungsi di controller dan kirim 'context'
                     controller.showDeleteConfirmation(context, course);
                   },
-                  //? --------------------------
                 );
               }),
             ],

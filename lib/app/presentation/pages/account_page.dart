@@ -1,12 +1,13 @@
-// lib/pages/account_page.dart
+// lib/app/presentation/pages/account_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+//? --- PERBAIKAN 1: Hapus go_router, import Get ---
+// import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/input_field.dart';
-import '../widgets/dropdown_field.dart'; // Menggunakan widget DropdownField yang baru
+import '../widgets/dropdown_field.dart';
 
-// Warna yang sering dipakai di layout
 const Color lsGreen = Color(0xFF0DA680);
 
 class AccountPage extends StatefulWidget {
@@ -17,14 +18,12 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
+  // ... (Semua state & fungsi internal tidak berubah) ...
   final TextEditingController nameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-
   String _dateOfBirth = 'Masukkan tanggal lahirmu';
   String _gender = 'Pilih laki-laki atau perempuan';
   String _jobStatus = 'Pilih status pekerjaanmu';
-
-  // Daftar opsi HARUS menyertakan placeholder sebagai item pertama
   final List<String> genderOptions = [
     'Pilih laki-laki atau perempuan',
     'Laki-laki',
@@ -44,7 +43,6 @@ class _AccountPageState extends State<AccountPage> {
     _loadProfileData();
   }
 
-  //* Fungsi untuk memuat data dari SharedPreferences
   void _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -57,7 +55,6 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
-  //* Fungsi untuk menyimpan perubahan data
   void _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('profile_name', nameController.text);
@@ -89,7 +86,6 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  //* Fungsi untuk menampilkan kalender (Date Picker)
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -104,7 +100,6 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  //* Fungsi untuk menampilkan dialog konfirmasi logout
   Future<void> _showLogoutConfirmationDialog() async {
     return showDialog<void>(
       context: context,
@@ -124,7 +119,8 @@ class _AccountPageState extends State<AccountPage> {
             TextButton(
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Ya, Keluar'),
-              onPressed: () => context.go('/login'),
+              //? --- PERBAIKAN 2: Ganti context.go ke Get.offAllNamed ---
+              onPressed: () => Get.offAllNamed('/login'),
             ),
           ],
         );
@@ -140,9 +136,8 @@ class _AccountPageState extends State<AccountPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // =========================================================
-            //* BAGIAN HEADER PROFIL & NAVIGASI (DIKEMBALIKAN)
-            // =========================================================
+            // ... (Semua UI Header, Form, Tombol... tidak berubah) ...
+            // (Ini semua SAMA seperti file yang Anda upload)
             const SizedBox(height: 20),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -173,8 +168,6 @@ class _AccountPageState extends State<AccountPage> {
               ],
             ),
             const SizedBox(height: 18),
-
-            //* Button "Buka Navigasi Menu"
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -193,10 +186,6 @@ class _AccountPageState extends State<AccountPage> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // =========================================================
-            //* BAGIAN EDIT PROFIL (FOTO)
-            // =========================================================
             const Text(
               "Edit Profil",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -205,7 +194,6 @@ class _AccountPageState extends State<AccountPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                //* Foto Profil dengan Icon Kamera di pojok kanan atas
                 Stack(
                   children: [
                     const CircleAvatar(
@@ -231,8 +219,6 @@ class _AccountPageState extends State<AccountPage> {
                   ],
                 ),
                 const SizedBox(width: 20),
-
-                //* Form Edit Foto
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,17 +252,11 @@ class _AccountPageState extends State<AccountPage> {
               ],
             ),
             const SizedBox(height: 40),
-
-            // =========================================================
-            //* BAGIAN FORM INFORMASI KONTAK (DI-REFACTOR)
-            // =========================================================
             const Text(
               "Informasi Kontak",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 15),
-
-            //* bagian Nama Lengkap
             InputField(
               label: "Nama Lengkap",
               labelSize: 16,
@@ -285,8 +265,6 @@ class _AccountPageState extends State<AccountPage> {
               hint: "Ahmad Sahroni",
             ),
             const SizedBox(height: 20),
-
-            //* bagian Tanggal Lahir dengan Date Picker
             GestureDetector(
               onTap: () => _selectDate(context),
               child: AbsorbPointer(
@@ -304,9 +282,6 @@ class _AccountPageState extends State<AccountPage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // TODO MODIFIKASI: Menggunakan DropdownField
-            //* bagian Jenis Kelamin
             DropdownField(
               label: "Jenis Kelamin",
               labelSize: 16,
@@ -316,9 +291,6 @@ class _AccountPageState extends State<AccountPage> {
               onChanged: (newValue) => setState(() => _gender = newValue!),
             ),
             const SizedBox(height: 20),
-
-            // TODO MODIFIKASI: Menggunakan DropdownField
-            //* bagian Status Pekerjaan
             DropdownField(
               label: "Status Pekerjaan",
               labelSize: 16,
@@ -328,8 +300,6 @@ class _AccountPageState extends State<AccountPage> {
               onChanged: (newValue) => setState(() => _jobStatus = newValue!),
             ),
             const SizedBox(height: 20),
-
-            //* bagian Alamat Lengkap
             InputField(
               label: "Alamat Lengkap",
               labelSize: 16,
@@ -340,8 +310,6 @@ class _AccountPageState extends State<AccountPage> {
               maxLines: 4,
             ),
             const SizedBox(height: 30),
-
-            //* Tombol Simpan Perubahan
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -358,8 +326,6 @@ class _AccountPageState extends State<AccountPage> {
               ),
             ),
             const SizedBox(height: 15),
-
-            //* Tombol Logout
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

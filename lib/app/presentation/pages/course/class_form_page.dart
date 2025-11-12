@@ -1,9 +1,13 @@
-// lib/pages/class_form_page.dart
+// lib/app/presentation/pages/course/class_form_page.dart
 
 import 'package:flutter/material.dart';
-// import 'package:get/get.dart'; // <-- Hapus import GetX
-import '../widgets/input_field.dart';
-import '../models/course_model.dart';
+
+// --- VERIFIKASI IMPORT ---
+// Path ini sudah disesuaikan dengan struktur folder Anda
+import '../../widgets/input_field.dart';
+//? --- PERBAIKAN 1: Path import diubah ke Domain Entity ---
+import '../../../domain/entities/course.dart';
+// -------------------------
 
 // Definisi warna
 const Color lsGreen = Color(0xFF0DA680);
@@ -27,7 +31,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
   bool _isPrakerja = false;
   bool _isSPL = false;
 
-  // Logika initState ini tetap sama seperti kode asli Anda
+  // Logika initState ini tetap sama
   @override
   void initState() {
     super.initState();
@@ -38,6 +42,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
       _namaController.text = widget.initialData!['nama'] ?? '';
       _hargaController.text = widget.initialData!['harga'] ?? '';
       _thumbnailPath = widget.initialData!['thumbnail'];
+      // Logika ini sudah benar, membaca dari 'tags'
       List<String> tags = (widget.initialData!['tags'] as List<dynamic>)
           .cast<String>();
       setState(() {
@@ -55,22 +60,28 @@ class _ClassFormPageState extends State<ClassFormPage> {
     super.dispose();
   }
 
-  // Fungsi ini dipanggil saat tombol 'Simpan Perubahan' ditekan
+  //? --- PERBAIKAN 2: Logika untuk menyimpan data ---
   void _simpanPerubahan() {
     if (_formKey.currentState!.validate()) {
       List<String> tags = [];
-      List<Color> tagColors = [];
+
+      //? Ubah dari 'List<Color>' menjadi 'List<String>'
+      List<String> tagColorsHex = [];
+
       if (_isPrakerja) {
         tags.add('Prakerja');
-        tagColors.add(tagBlue);
+        //? Gunakan konstanta Hex dari 'course.dart'
+        tagColorsHex.add(tagBlueHex);
       }
       if (_isSPL) {
         tags.add('SPL');
-        tagColors.add(tagGreen);
+        //? Gunakan konstanta Hex dari 'course.dart'
+        tagColorsHex.add(tagGreenHex);
       }
       if (tags.isEmpty) {
         tags.add('Lainnya');
-        tagColors.add(Colors.purple);
+        //? Gunakan konstanta Hex dari 'course.dart'
+        tagColorsHex.add(tagPurpleHex);
       }
 
       final dataKelas = {
@@ -82,31 +93,30 @@ class _ClassFormPageState extends State<ClassFormPage> {
         'kategori': tags.isNotEmpty ? tags.first : null,
         'thumbnail': _thumbnailPath ?? "assets/images/course1.png",
         'tags': tags,
-        'tagColors': tagColors,
+        //? Ubah key dari 'tagColors' menjadi 'tagColorsHex'
+        'tagColorsHex': tagColorsHex,
       };
 
-      //? PERBAIKAN CRASH: Ganti 'Get.back()' dengan 'Navigator.pop()'
-      // Ini adalah perintah Flutter asli untuk menutup halaman/bottomsheet
-      // dan "mengembalikan" data ('dataKelas') ke halaman sebelumnya.
+      // 'Navigator.pop' ini sudah benar.
+      // Ini mengembalikan data map ke 'class_page.dart'
       Navigator.pop(context, dataKelas);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    //? PERUBAHAN UI: Ganti 'Scaffold' dengan 'Material'
-    // Kenapa? Agar bisa ditampilkan di dalam BottomSheet.
+    // UI dari file ini (Material, Form, ListView) sudah benar
+    // dan tidak perlu diubah.
     return Material(
       color: Colors.white,
       child: SafeArea(
         top: false,
         child: Form(
           key: _formKey,
-          // Dibungkus ListView agar bisa di-scroll
           child: ListView(
             padding: const EdgeInsets.all(24.0),
             children: [
-              //? TAMBAHAN UI: Judul Manual (pengganti AppBar)
+              // ... (UI Judul Manual) ...
               Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 24.0),
                 child: Text(
@@ -122,7 +132,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 ),
               ),
 
-              // --- SISA FORM DI BAWAH INI SAMA PERSIS DENGAN KODE ASLI ANDA ---
+              // --- SISA FORM DI BAWAH INI SAMA PERSIS ---
               const Text(
                 "Informasi Kelas",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -130,8 +140,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
               const SizedBox(height: 15),
               InputField(
                 label: 'Nama Kelas',
-                labelSize: 16,
-                labelWeight: FontWeight.w500,
+                // ... (properti InputField)
                 controller: _namaController,
                 hint: 'e.g Marketing Communication',
                 validator: (value) => value == null || value.isEmpty
@@ -141,8 +150,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
               const SizedBox(height: 24),
               InputField(
                 label: 'Harga Kelas',
-                labelSize: 16,
-                labelWeight: FontWeight.w500,
+                // ... (properti InputField)
                 controller: _hargaController,
                 hint: 'e.g 1.000.000',
                 keyboardType: TextInputType.number,
@@ -208,6 +216,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
               GestureDetector(
                 onTap: () {
                   print('Upload Foto Tapped!');
+                  // Logika upload foto
                 },
                 child: Container(
                   height: 150,
@@ -235,7 +244,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _simpanPerubahan,
+                  onPressed: _simpanPerubahan, // Panggil fungsi yang diperbaiki
                   style: ElevatedButton.styleFrom(
                     backgroundColor: lsGreen,
                     foregroundColor: Colors.white,
@@ -252,7 +261,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  //? PERBAIKAN CRASH: Ganti 'Get.back()' dengan 'Navigator.pop()'
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: lsGreenLight,

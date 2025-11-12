@@ -1,7 +1,8 @@
-// lib/models/todo.dart
-import 'dart:convert';
+// lib/app/domain/entities/todo.dart
+import 'dart:convert'; // <-- PENTING: Tambahkan import ini
 
-//? 1. Fungsi helper untuk mengubah List JSON String menjadi List<Todo>
+//? --- FUNGSI YANG HILANG ADA DI SINI ---
+//? Ini diambil dari file lib/models/todo.dart asli Anda
 List<Todo> todoListFromJson(String str) {
   final dynamic decodedJson = json.decode(str);
 
@@ -16,7 +17,6 @@ List<Todo> todoListFromJson(String str) {
       todoList = decodedJson['todos'] as List<dynamic>;
     } else {
       // Coba asumsikan root-nya adalah Map tapi tidak ada key pembungkus
-      // (terkadang API mengembalikan { "items": [...] } atau sejenisnya)
       // Jika tidak ada key yang cocok, lempar error
       throw Exception(
         "Format JSON tidak dikenal: Kunci 'data' atau 'todos' tidak ditemukan dalam Map.",
@@ -30,13 +30,12 @@ List<Todo> todoListFromJson(String str) {
   }
 
   //? 3. Ubah tiap item di list menjadi objek Todo
-  // Sekarang parse list yang sudah ditemukan
   return todoList
       .map((dynamic item) => Todo.fromJson(item as Map<String, dynamic>))
       .toList();
 }
+//? --- END FUNGSI YANG HILANG ---
 
-//? 4. CLASS TODO (SESUAI API)
 class Todo {
   final String? id;
   final String text;
@@ -44,22 +43,25 @@ class Todo {
 
   Todo({this.id, required this.text, required this.completed});
 
-  //? 5. 'fromJson' (Server -> Aplikasi)
-  // mengubah data JSON mentah (map) dari server menajdi objek Todo yang bisa digunakan aplikasi
+  // 'fromJson' (Server -> Aplikasi)
+  // (Diambil dari file todo.dart asli Anda)
   factory Todo.fromJson(Map<String, dynamic> json) {
     return Todo(
-      id: json['id'] as String?,
+      // API mungkin mengembalikan 'id' atau '_id'
+      // Kita tambahkan '_id' untuk jaga-jaga, tapi utamakan 'id'
+      id: json['id'] as String? ?? json['_id'] as String?,
       text: json['text'] as String,
       completed: json['completed'] as bool,
     );
   }
 
-  //? 6. 'toJson' (Aplikasi -> Server)
+  // 'toJson' (Aplikasi -> Server)
+  // (Diambil dari file todo.dart asli Anda)
   Map<String, dynamic> toJson() {
     return {'text': text, 'completed': completed};
   }
 
-  //? 7. 'copyWith' (Helper untuk update)
+  // 'copyWith' (Helper untuk update)
   Todo copyWith({String? id, String? text, bool? completed}) => Todo(
     id: id ?? this.id,
     text: text ?? this.text,
