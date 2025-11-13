@@ -4,9 +4,24 @@ import 'package:get/get.dart';
 
 // --- VERIFIKASI IMPORT ---
 import 'app/core/routes/app_routes.dart';
+
+import 'package:firebase_core/firebase_core.dart'; // <-- 1. IMPORT
+import 'firebase_options.dart'; // <-- 2. IMPORT
 // -------------------------
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Tambahkan try-catch agar error Firebase bisa terlihat
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("✅ Firebase initialized successfully");
+  } catch (e) {
+    print("❌ Firebase init error: $e");
+  }
+
   runApp(const LmsApp());
 }
 
