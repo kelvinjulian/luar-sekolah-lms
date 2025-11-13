@@ -1,26 +1,34 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-// --- VERIFIKASI IMPORT ---
 import 'app/core/routes/app_routes.dart';
-
-import 'package:firebase_core/firebase_core.dart'; // <-- 1. IMPORT
-import 'firebase_options.dart'; // <-- 2. IMPORT
-// -------------------------
+import 'app/presentation/controllers/auth_controller.dart';
+import 'app/data/repositories/auth_repository_impl.dart';
+import 'app/data/datasources/auth_firebase_data_source.dart';
+import 'app/domain/usecases/auth/login_use_case.dart';
+import 'app/domain/usecases/auth/register_use_case.dart';
+import 'app/domain/usecases/auth/logout_use_case.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Tambahkan try-catch agar error Firebase bisa terlihat
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print("✅ Firebase initialized successfully");
-  } catch (e) {
-    print("❌ Firebase init error: $e");
-  }
+  // Inisialisasi hanya sekali, dan permanen
+  final dataSource = AuthFirebaseDataSource();
+  final repo = AuthRepositoryImpl(dataSource);
+
+  Get.put(
+    AuthController(
+      loginUseCase: LoginUseCase(repo),
+      registerUseCase: RegisterUseCase(repo),
+      logoutUseCase: LogoutUseCase(repo),
+      authRepository: repo,
+    ),
+    permanent: true, // Penting!
+  );
 
   runApp(const LmsApp());
 }
@@ -35,16 +43,13 @@ class LmsApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
         appBarTheme: const AppBarTheme(
           elevation: 1.0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
         ),
       ),
-      // Rute awal sekarang adalah '/login' (diambil dari AppPages.INITIAL)
       initialRoute: AppPages.INITIAL,
-      // Ambil semua halaman dari AppPages
       getPages: AppPages.pages,
     );
   }

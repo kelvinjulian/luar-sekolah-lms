@@ -35,8 +35,8 @@ class ClassController extends GetxController {
 
   @override
   void onInit() {
-    //?todo --- PERBAIKAN: Hapus baris fetchCourses() di sini ---
-    // fetchCourses(); // <-- HAPUS BARIS INI
+    //?todo --- PERBAIKAN: Kembalikan pemanggilan data otomatis ---
+    fetchCourses();
     super.onInit();
   }
 

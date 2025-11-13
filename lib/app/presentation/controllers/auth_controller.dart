@@ -1,4 +1,4 @@
-// lib/app/presentation/controllers/auth_controller.dart
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/usecases/auth/login_use_case.dart';
@@ -27,63 +27,82 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Ikat stream ke variabel _user. Ini akan terus update
+    // Ikat stream ke variabel _user agar selalu update saat auth berubah
     _user.bindStream(authRepository.authStateChanges);
   }
 
-  //? --- PERBAIKAN UTAMA ADA DI SINI ---
-  // onReady() dijalankan SATU KALI setelah widget pertama di-render.
-  // Ini adalah tempat teraman untuk navigasi awal.
   @override
   void onReady() {
     super.onReady();
 
-    // 1. Jalankan handler navigasi dengan status user saat ini
+    // Jalankan handler navigasi dengan status user saat ini
     _handleAuthChanged(_user.value);
 
-    // 2. Siapkan listener 'ever' HANYA untuk perubahan di MASA DEPAN
-    //    (yaitu, saat user menekan tombol login atau logout manual)
+    // Dengarkan perubahan auth di masa depan
     ever(_user, _handleAuthChanged);
   }
 
-  // Fungsi yang menangani navigasi berdasarkan status login
+  // Fungsi untuk menangani navigasi berdasarkan status login
   void _handleAuthChanged(User? user) {
-    isLoading(false); // Selalu set loading false saat auth berubah
+    isLoading(false);
 
     if (user != null) {
-      // Jika user login, dan kita TIDAK sedang di /home, pergi ke /home
+      // Jika user login, arahkan ke home (jika belum di sana)
       if (Get.currentRoute != '/home') {
         Get.offAllNamed('/home');
       }
     } else {
-      // Jika user logout, dan kita TIDAK sedang di /login, pergi ke /login
+      // Jika user logout, arahkan ke login (jika belum di sana)
       if (Get.currentRoute != '/login') {
         Get.offAllNamed('/login');
       }
     }
   }
 
-  // --- FUNGSI AKSI (LOGIN/REGISTER/LOGOUT) ---
-
+  // --- LOGIN ---
   Future<void> login(String email, String password) async {
     try {
       isLoading(true);
       await loginUseCase(email, password);
-      // Navigasi akan di-handle oleh 'ever' + '_handleAuthChanged'
+      // Navigasi otomatis oleh _handleAuthChanged
     } on FirebaseAuthException catch (e) {
       isLoading(false);
-      Get.snackbar("Login Gagal", e.message ?? "Terjadi kesalahan");
+      Get.snackbar(
+        "Login Gagal",
+        e.message ?? "Terjadi kesalahan",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE53935),
+        colorText: const Color(0xFFFFFFFF),
+      );
     }
   }
 
+  // --- REGISTER ---
   Future<void> register(String email, String password) async {
     try {
       isLoading(true);
       await registerUseCase(email, password);
-      // Navigasi akan di-handle oleh 'ever' + '_handleAuthChanged'
+
+      //  Tampilkan pesan sukses (tidak logout)
+      Get.snackbar(
+        "Registrasi Berhasil",
+        "Selamat datang di aplikasi!",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+        backgroundColor: const Color(0xFF4CAF50),
+        colorText: const Color(0xFFFFFFFF),
+      );
+
+      // Tidak perlu logout — user akan otomatis diarahkan ke Home
     } on FirebaseAuthException catch (e) {
       isLoading(false);
-      Get.snackbar("Register Gagal", e.message ?? "Terjadi kesalahan");
+      Get.snackbar(
+        "Register Gagal",
+        e.message ?? "Terjadi kesalahan",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE53935),
+        colorText: const Color(0xFFFFFFFF),
+      );
 
       if (e.code == 'email-already-in-use') {
         Get.toNamed('/login');
@@ -91,14 +110,21 @@ class AuthController extends GetxController {
     }
   }
 
+  // --- LOGOUT ---
   Future<void> logout() async {
     try {
       isLoading(true);
       await logoutUseCase();
-      // Navigasi akan di-handle oleh 'ever' + '_handleAuthChanged'
+      // Navigasi otomatis oleh _handleAuthChanged
     } on FirebaseAuthException catch (e) {
       isLoading(false);
-      Get.snackbar("Logout Gagal", e.message ?? "Terjadi kesalahan");
+      Get.snackbar(
+        "Logout Gagal",
+        e.message ?? "Terjadi kesalahan",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE53935),
+        colorText: const Color(0xFFFFFFFF),
+      );
     }
   }
 }
