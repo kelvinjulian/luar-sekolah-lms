@@ -18,31 +18,43 @@ import '../../presentation/pages/register_page.dart';
 import '../../presentation/pages/home_page.dart';
 // -------------------------
 
+import '../bindings/auth_binding.dart'; // <-- 1. IMPORT
+import '../../presentation/pages/splash_page.dart'; // <-- 2. IMPORT
+
 class AppPages {
   //? --- PERBAIKAN 1: Ubah rute awal ke /login ---
-  static const INITIAL = '/home';
+  static const INITIAL = '/splash';
 
   static final pages = [
     //? --- Rute BARU untuk Autentikasi ---
+
+    //? --- Rute BARU untuk Splash/Gatekeeper ---
+    GetPage(
+      name: '/splash',
+      page: () => const SplashPage(),
+      binding: AuthBinding(), // <-- 3. TAMBAHKAN BINDING
+    ),
+
     GetPage(
       name: '/login',
       page: () => const LoginPage(),
-      // Tidak perlu binding, halaman ini simpel
+      binding: AuthBinding(), // <-- 4. TAMBAHKAN BINDING
     ),
     GetPage(
       name: '/register',
       page: () => const RegisterPage(),
-      // Tidak perlu binding, halaman ini simpel
+      binding: AuthBinding(), // <-- 5. TAMBAHKAN BINDING
     ),
 
     //? --- Rute BARU untuk Halaman Utama (Induk) ---
     GetPage(
       name: '/home',
       page: () => const HomePage(),
-      //? PENTING:
-      //? Halaman Home memuat ClassPage dan TodoListPage,
-      //? jadi kita harus memuat binding mereka di sini.
-      bindings: [TodoBinding(), ClassBinding()],
+      bindings: [
+        TodoBinding(),
+        ClassBinding(),
+        AuthBinding(), // <-- 6. TAMBAHKAN BINDING
+      ],
     ),
 
     // --- Rute-rute LAMA kita ---
