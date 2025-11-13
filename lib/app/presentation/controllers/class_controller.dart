@@ -35,7 +35,8 @@ class ClassController extends GetxController {
 
   @override
   void onInit() {
-    fetchCourses();
+    //?todo --- PERBAIKAN: Hapus baris fetchCourses() di sini ---
+    // fetchCourses(); // <-- HAPUS BARIS INI
     super.onInit();
   }
 

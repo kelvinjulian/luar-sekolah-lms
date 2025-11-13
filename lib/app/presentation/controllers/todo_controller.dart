@@ -61,7 +61,8 @@ class TodoController extends GetxController {
 
   @override
   void onInit() {
-    fetchTodos();
+    //?todo --- PERBAIKAN: Hapus baris fetchTodos() di sini ---
+    // fetchTodos(); // <-- HAPUS BARIS INI
     super.onInit();
   }
 
