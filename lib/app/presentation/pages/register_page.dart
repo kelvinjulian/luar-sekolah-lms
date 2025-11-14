@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-//? --- PERBAIKAN 1: Hapus go_router, import Get ---
-// import 'package:go_router/go_router.dart';
+//? --- PERBAIKAN: Hapus go_router, import Get ---
 import 'package:get/get.dart';
+//? --- PERBAIKAN: Import AuthController ---
+import '../controllers/auth_controller.dart';
 import '../widgets/input_field.dart';
 import '../widgets/checklist_item.dart';
 
@@ -21,12 +22,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  // ... (Semua state validasi & UI lainnya tidak berubah) ...
+  // ... (State UI tidak berubah) ...
   bool isPasswordVisible = false;
   bool isRobotChecked = false;
   bool isFormFilled = false;
   bool isEmailValid = false;
-  bool isEmailRegistered = false;
+  bool isEmailRegistered = false; // (Mock)
   bool isPhoneValid62 = false;
   bool isPhoneValidLength = false;
   bool isPhoneValidNumber = false;
@@ -35,7 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isPasswordHasNumber = false;
   bool isPasswordHasSymbol = false;
   bool _isLoading = false;
-  bool _isSuccess = false;
+  // bool _isSuccess = false; // <-- Tidak lagi diperlukan
 
   // ... (Semua fungsi validasi & state tidak berubah) ...
   void checkFormFilled() {
@@ -96,7 +97,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (Semua logika kalkulasi state 'isButtonActive' tidak berubah) ...
+    //? --- PERBAIKAN: Panggil Manajer (Controller) ---
+    final authC = Get.find<AuthController>();
+
+    // ... (Logika validasi tombol tidak berubah) ...
     bool isEmailValidFull = isEmailValid && !isEmailRegistered;
     bool isPhoneValidFull =
         isPhoneValid62 && isPhoneValidLength && isPhoneValidNumber;
@@ -114,8 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // ... (UI Logo, Judul, Tombol Google, Divider, Form... tidak berubah) ...
-          // (Ini semua SAMA seperti file yang Anda upload)
+          // ... (UI Logo, Judul, Google, Divider, Form... tidak berubah) ...
           const SizedBox(height: 40),
           Align(
             alignment: Alignment.centerLeft,
@@ -386,42 +389,33 @@ class _RegisterPageState extends State<RegisterPage> {
               onPressed: isButtonActive && !_isLoading
                   ? () async {
                       if (_formKey.currentState!.validate()) {
+                        // 1. Mulai animasi loading
                         setState(() {
                           _isLoading = true;
                         });
-                        await Future.delayed(const Duration(seconds: 2));
-                        setState(() {
-                          _isLoading = false;
-                          _isSuccess = true;
-                        });
 
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Pendaftaran berhasil! Anda akan diarahkan ke halaman login.',
-                              ),
-                              backgroundColor: Colors.green,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-
-                        await Future.delayed(
-                          const Duration(milliseconds: 1500),
+                        //? --- PERBAIKAN: Panggil AuthController ---
+                        await authC.register(
+                          emailController.text,
+                          passwordController.text,
                         );
+                        //? --- Hapus navigasi ---
+                        //? Navigasi (Get.offAllNamed) akan di-handle
+                        //? oleh Stream di SplashPage/AuthController
 
+                        // 3. Hentikan loading jika widget masih ada
                         if (mounted) {
-                          //? --- PERBAIKAN 2: Ganti context.go ke Get.offAllNamed ---
-                          Get.offAllNamed('/login');
+                          setState(() {
+                            _isLoading = false;
+                          });
                         }
                       }
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isSuccess
-                    ? Colors.green
-                    : (isButtonActive ? const Color(0xFF077d60) : Colors.grey),
+                backgroundColor: (isButtonActive
+                    ? const Color(0xFF077d60)
+                    : Colors.grey),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
@@ -429,8 +423,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : _isSuccess
-                  ? const Icon(Icons.check, size: 28)
+                  //? Hapus state _isSuccess
                   : const Text("Daftarkan Akun"),
             ),
           ),
@@ -481,7 +474,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      //? --- PERBAIKAN 3: Ganti context.push ke Get.toNamed ---
+                      //? --- PERBAIKAN: Ganti context.push ke Get.toNamed ---
                       Get.toNamed('/login');
                     },
                     child: const Text(

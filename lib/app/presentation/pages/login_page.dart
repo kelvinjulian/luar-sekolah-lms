@@ -1,12 +1,9 @@
+// lib/app/presentation/pages/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-//? --- PERBAIKAN 1: Hapus go_router, import Get ---
-// import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
-
-// Import widget-widget custom
+import '../controllers/auth_controller.dart';
 import '../widgets/input_field.dart';
-// import '../widgets/checklist_item.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,14 +14,12 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isPasswordVisible = false;
   bool isFormFilled = false;
-  bool _isLoading = false;
-  bool _isSuccess = false;
+  // bool _isLoading = false; // <-- HAPUS
 
   void checkFormFilled() {
     setState(() {
@@ -49,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authC = Get.find<AuthController>();
     bool isButtonActive = isFormFilled;
 
     return Scaffold(
@@ -56,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // ... (UI Logo, Judul, Deskripsi, Tombol Google, Divider... tidak berubah) ...
+          // ... (UI statis tidak berubah) ...
           const SizedBox(height: 40),
           Align(
             alignment: Alignment.centerLeft,
@@ -95,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {}, // Aksi belum diimplementasi
               icon: SvgPicture.asset(
                 "assets/icons/google-icon.svg",
                 height: 20,
@@ -133,8 +129,6 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // ... (UI Form, InputField, Lupa password... tidak berubah) ...
           Form(
             key: _formKey,
             child: Column(
@@ -183,7 +177,9 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      // TODO Tambahkan logika untuk Lupa Password
+                    },
                     child: Text(
                       "Lupa password?",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -202,63 +198,41 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 25),
 
           // =========================
-          //* TOMBOL "MASUK" DENGAN ANIMASI
+          //* TOMBOL "MASUK" REAKTIF
           // =========================
           SizedBox(
             width: double.infinity,
             height: 54,
-            child: ElevatedButton(
-              onPressed: isButtonActive && !_isLoading
-                  ? () async {
-                      if (_formKey.currentState!.validate()) {
-                        setState(() {
-                          _isLoading = true;
-                        });
-
-                        await Future.delayed(const Duration(seconds: 2));
-
-                        setState(() {
-                          _isLoading = false;
-                          _isSuccess = true;
-                        });
-
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Login berhasil! Selamat datang kembali.',
-                              ),
-                              backgroundColor: Colors.green,
-                              behavior: SnackBarBehavior.floating,
-                            ),
+            child: Obx(
+              // <-- 1. Bungkus tombol dengan Obx
+              () => ElevatedButton(
+                // 2. Gunakan state loading dari Controller
+                onPressed: isButtonActive && !authC.isLoading.value
+                    ? () async {
+                        if (_formKey.currentState!.validate()) {
+                          // 3. Panggil fungsi login Controller
+                          await authC.login(
+                            emailController.text,
+                            passwordController.text,
                           );
+                          // TIDAK PERLU setState atau navigasi di sini karena sudah di-handle di AuthController
                         }
-
-                        await Future.delayed(
-                          const Duration(milliseconds: 1500),
-                        );
-
-                        //? --- PERBAIKAN 2: Ganti context.go ke Get.offAllNamed ---
-                        //? 'offAllNamed' pindah halaman dan hapus semua halaman sebelumnya
-                        //? (agar tidak bisa 'back' ke login)
-                        Get.offAllNamed('/home');
                       }
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isSuccess
-                    ? Colors.green
-                    : (isButtonActive ? const Color(0xFF077d60) : Colors.grey),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: (isButtonActive
+                      ? const Color(0xFF077d60)
+                      : Colors.grey),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
+                // 4. Ganti child berdasarkan state loading Controller
+                child: authC.isLoading.value
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Masuk"),
               ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : _isSuccess
-                  ? const Icon(Icons.check, size: 28)
-                  : const Text("Masuk"),
             ),
           ),
           const SizedBox(height: 40),
@@ -284,7 +258,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      //? --- PERBAIKAN 3: Ganti context.push ke Get.toNamed ---
                       Get.toNamed('/register');
                     },
                     child: const Text(

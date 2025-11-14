@@ -2,7 +2,9 @@
 import 'package:get/get.dart';
 
 //? --- PERBAIKAN: Import file yang relevan ---
-import '../../data/datasources/todo_remote_data_source.dart';
+// import '../../data/datasources/todo_remote_data_source.dart';
+//? --- PERBAIKAN: Ganti import remote ke firestore ---
+import '../../data/datasources/todo_firestore_data_source.dart';
 import '../../data/repositories/todo_repository_impl.dart';
 import '../../domain/repositories/i_todo_repository.dart';
 import '../../domain/usecases/todo/add_todo.dart';
@@ -16,14 +18,15 @@ class TodoBinding extends Bindings {
   void dependencies() {
     // --- DATA ---
     //? --- PERBAIKAN: Langsung inject RemoteDataSource ---
-    Get.lazyPut<TodoRemoteDataSource>(
-      () => TodoRemoteDataSource(),
+    //?todo --- PERBAIKAN: Daftarkan supplier baru ---
+    Get.lazyPut<TodoFirestoreDataSource>(
+      () => TodoFirestoreDataSource(),
       fenix: true,
     );
 
-    //? --- PERBAIKAN: Repository di-inject dengan class konkret ---
+    //?todo --- PERBAIKAN: Suntikkan supplier baru ke Koki ---
     Get.lazyPut<ITodoRepository>(
-      () => TodoRepositoryImpl(Get.find<TodoRemoteDataSource>()),
+      () => TodoRepositoryImpl(Get.find<TodoFirestoreDataSource>()),
       fenix: true,
     );
 

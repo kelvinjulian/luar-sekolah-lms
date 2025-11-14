@@ -61,6 +61,7 @@ class TodoController extends GetxController {
 
   @override
   void onInit() {
+    //?todo --- PERBAIKAN: Kembalikan pemanggilan data otomatis ---
     fetchTodos();
     super.onInit();
   }

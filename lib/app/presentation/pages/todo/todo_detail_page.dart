@@ -130,8 +130,8 @@ class TodoDetailPage extends StatelessWidget {
           // Panggil fungsi (di atas)
           _showEditTodoDialog(context);
         },
-        child: const Icon(Icons.edit),
         tooltip: 'Edit Tugas',
+        child: const Icon(Icons.edit),
       ),
     );
   }
