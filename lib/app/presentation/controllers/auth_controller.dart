@@ -28,21 +28,24 @@ class AuthController extends GetxController {
   void onInit() {
     super.onInit();
     // Ikat stream ke variabel _user agar selalu update saat auth berubah
-    _user.bindStream(authRepository.authStateChanges);
+    _user.bindStream(
+      authRepository.authStateChanges,
+    ); // kapanpun status login berubah di firebase (user login/logout), variable _user akan otomatis terupdate
   }
 
+  //? OnReady adalah fungsi GetX yang berjalan satu kali setelah widget SplashPage dibangun
   @override
   void onReady() {
     super.onReady();
 
-    // Jalankan handler navigasi dengan status user saat ini
+    // (1) Jalankan handler navigasi dengan status user saat ini
     _handleAuthChanged(_user.value);
 
-    // Dengarkan perubahan auth di masa depan
+    // (1) Jalankan handler navigasi dengan status user saat ini
     ever(_user, _handleAuthChanged);
   }
 
-  // Fungsi untuk menangani navigasi berdasarkan status login
+  //? Fungsi untuk menangani navigasi berdasarkan status login
   void _handleAuthChanged(User? user) {
     isLoading(false);
 
@@ -59,14 +62,14 @@ class AuthController extends GetxController {
     }
   }
 
-  // --- LOGIN ---
+  //? --- LOGIN ---
   Future<void> login(String email, String password) async {
     try {
-      isLoading(true);
+      isLoading(true); // <-- Spinner aktif di UI
       await loginUseCase(email, password);
-      // Navigasi otomatis oleh _handleAuthChanged
+      // Login sukses. Stream _user akan otomatis terupdate.
     } on FirebaseAuthException catch (e) {
-      isLoading(false);
+      isLoading(false); // <-- Spinner mati jika gagal
       Get.snackbar(
         "Login Gagal",
         e.message ?? "Terjadi kesalahan",
@@ -77,13 +80,15 @@ class AuthController extends GetxController {
     }
   }
 
-  // --- REGISTER ---
+  //? --- REGISTER ---
   Future<void> register(String email, String password) async {
     try {
-      isLoading(true);
+      isLoading(true); // <-- (1) UI menampilkan spinner
+
+      // (2) Panggil UseCase -> Repository -> DataSource
       await registerUseCase(email, password);
 
-      //  Tampilkan pesan sukses (tidak logout)
+      // (3) Tampilkan pesan sukses
       Get.snackbar(
         "Registrasi Berhasil",
         "Selamat datang di aplikasi!",
@@ -92,8 +97,6 @@ class AuthController extends GetxController {
         backgroundColor: const Color(0xFF4CAF50),
         colorText: const Color(0xFFFFFFFF),
       );
-
-      // Tidak perlu logout — user akan otomatis diarahkan ke Home
     } on FirebaseAuthException catch (e) {
       isLoading(false);
       Get.snackbar(
@@ -104,6 +107,7 @@ class AuthController extends GetxController {
         colorText: const Color(0xFFFFFFFF),
       );
 
+      // jika email sudah terdaftar, arahkan ke halaman login
       if (e.code == 'email-already-in-use') {
         Get.toNamed('/login');
       }

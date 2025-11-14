@@ -5,6 +5,7 @@ import '../datasources/todo_firestore_data_source.dart';
 
 class TodoRepositoryImpl implements ITodoRepository {
   //?todo --- PERBAIKAN: Ganti tipe data source ---
+  // Koki tahu nomor Supplier-nya (di-inject oleh Binding)
   final TodoFirestoreDataSource dataSource;
 
   TodoRepositoryImpl(this.dataSource);
@@ -16,6 +17,7 @@ class TodoRepositoryImpl implements ITodoRepository {
 
   @override
   Future<Todo> addTodo(String text) {
+    // Koki meneruskan perintah ke Supplier
     return dataSource.createTodo(text);
   }
 

@@ -8,12 +8,10 @@ class SplashPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //? --- PERBAIKAN: Gunakan Get.find() ---
     //? Ini "membangunkan" AuthController yang sudah di-lazyPut oleh AuthBinding.
     //? Ini HANYA perlu dipanggil untuk memastikan onInit/onReady-nya berjalan.
     Get.find<AuthController>();
 
-    //? --- PERBAIKAN: Hapus StreamBuilder ---
     //? Kita tidak perlu StreamBuilder lagi karena AuthController
     //? sekarang menangani navigasi secara global.
     return const Scaffold(

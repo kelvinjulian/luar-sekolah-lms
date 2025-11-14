@@ -215,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                             emailController.text,
                             passwordController.text,
                           );
-                          // TIDAK PERLU setState atau navigasi di sini
+                          // TIDAK PERLU setState atau navigasi di sini karena sudah di-handle di AuthController
                         }
                       }
                     : null,

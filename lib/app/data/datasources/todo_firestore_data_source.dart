@@ -7,11 +7,13 @@ class TodoFirestoreDataSource {
   final _auth = FirebaseAuth.instance;
 
   // Helper untuk mendapatkan collection 'todos' milik user yang sedang login
+  //? (A) Helper Isolasi Data
   CollectionReference<Map<String, dynamic>> _getTodoCollection() {
-    final userId = _auth.currentUser?.uid;
+    final userId = _auth.currentUser?.uid; // Cek siapa yang login
     if (userId == null) {
       throw Exception("User tidak login, tidak bisa mengakses todo.");
     }
+    // Dapatkan brankas spesifik milik user itu
     return _db.collection('users').doc(userId).collection('todos');
   }
 
@@ -33,11 +35,13 @@ class TodoFirestoreDataSource {
   }
 
   // CREATE
+  //? (B) Fungsi Aksi
   Future<Todo> createTodo(String text) async {
     try {
       final newTodo = Todo(text: text, completed: false);
 
       // 'add' akan membuat ID dokumen unik secara otomatis
+      // Tambahkan dokumen ke brankas user
       final docRef = await _getTodoCollection().add(newTodo.toJson());
 
       // Kembalikan objek Todo lengkap dengan ID barunya
