@@ -6,6 +6,7 @@ import '../../domain/usecases/auth/register_use_case.dart';
 import '../../domain/usecases/auth/logout_use_case.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 
+//? Controller untuk mengelola autentikasi user
 class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
@@ -24,6 +25,8 @@ class AuthController extends GetxController {
     required this.authRepository,
   });
 
+  //? bagian ini, jika user berhasil login atau logout, maka firebase akan mendeteksi status tersebut dan mengupdate stream authStateChanges.
+  //? sehingga akan menavigasi user ke halaman yang sesuai secara otomatis.
   @override
   void onInit() {
     super.onInit();
