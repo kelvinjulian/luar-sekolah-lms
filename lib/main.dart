@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 import 'app/core/routes/app_routes.dart';
+import 'app/core/services/notification_service.dart'; // Import Service Baru
 import 'app/presentation/controllers/auth_controller.dart';
 import 'app/data/repositories/auth_repository_impl.dart';
 import 'app/data/datasources/auth_firebase_data_source.dart';
@@ -16,7 +17,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Inisialisasi hanya sekali, dan permanen
+  // --- INISIALISASI SERVICES ---
+  // Initialize Notification Service
+  final notificationService = Get.put(NotificationService(), permanent: true);
+  await notificationService.init();
+
+  // Inisialisasi Auth Repository
   final dataSource = AuthFirebaseDataSource();
   final repo = AuthRepositoryImpl(dataSource);
 
@@ -27,7 +33,7 @@ void main() async {
       logoutUseCase: LogoutUseCase(repo),
       authRepository: repo,
     ),
-    permanent: true, // Penting!
+    permanent: true,
   );
 
   runApp(const LmsApp());
