@@ -89,8 +89,8 @@ class TodoListPage extends StatelessWidget {
         onPressed: () {
           _showAddTodoDialog(context);
         },
-        child: const Icon(Icons.add),
         tooltip: 'Tambah Tugas',
+        child: const Icon(Icons.add),
       ),
     );
   }

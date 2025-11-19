@@ -1,8 +1,7 @@
-// lib/app/core/routes/app_routes.dart
 import 'package:get/get.dart';
 
 // --- VERIFIKASI IMPORT ---
-// Import SEMUA binding
+// Import binding yang BUKAN Auth
 import '../bindings/class_binding.dart';
 import '../bindings/todo_binding.dart';
 
@@ -10,43 +9,52 @@ import '../bindings/todo_binding.dart';
 import '../../presentation/pages/course/class_page.dart';
 import '../../presentation/pages/todo/todo_list_page.dart';
 import '../../presentation/pages/todo/todo_detail_page.dart';
-import '../../domain/entities/todo.dart'; // Dibutuhkan untuk GetPage /todo-detail
-
-// Import halaman-halaman BARU
+import '../../domain/entities/todo.dart';
 import '../../presentation/pages/login_page.dart';
 import '../../presentation/pages/register_page.dart';
 import '../../presentation/pages/home_page.dart';
-// -------------------------
+import '../../presentation/pages/splash_page.dart';
+
+//? --- PERBAIKAN 1: Hapus import AuthBinding ---
+// import '../bindings/auth_binding.dart';
 
 class AppPages {
-  //? --- PERBAIKAN 1: Ubah rute awal ke /login ---
-  static const INITIAL = '/home';
+  static const INITIAL = '/splash';
 
   static final pages = [
-    //? --- Rute BARU untuk Autentikasi ---
+    //? --- PERBAIKAN 2: Hapus 'binding: AuthBinding()' ---
+    GetPage(
+      name: '/splash',
+      page: () => const SplashPage(),
+      // binding: AuthBinding(), // <-- HAPUS
+    ),
+
+    //? --- PERBAIKAN 3: Hapus 'binding: AuthBinding()' ---
     GetPage(
       name: '/login',
       page: () => const LoginPage(),
-      // Tidak perlu binding, halaman ini simpel
+      // binding: AuthBinding(), // <-- HAPUS
     ),
+
+    //? --- PERBAIKAN 4: Hapus 'binding: AuthBinding()' ---
     GetPage(
       name: '/register',
       page: () => const RegisterPage(),
-      // Tidak perlu binding, halaman ini simpel
+      // binding: AuthBinding(), // <-- HAPUS
     ),
 
-    //? --- Rute BARU untuk Halaman Utama (Induk) ---
     GetPage(
       name: '/home',
       page: () => const HomePage(),
-      //? PENTING:
-      //? Halaman Home memuat ClassPage dan TodoListPage,
-      //? jadi kita harus memuat binding mereka di sini.
-      bindings: [TodoBinding(), ClassBinding()],
+      bindings: [
+        //? --- PERBAIKAN 5: Hapus AuthBinding() dari list ---
+        TodoBinding(),
+        ClassBinding(),
+        // AuthBinding(), // <-- HAPUS
+      ],
     ),
 
-    // --- Rute-rute LAMA kita ---
-    // (Kita biarkan agar deep linking / tes tetap berfungsi)
+    // --- Rute-rute ini sudah benar ---
     GetPage(
       name: '/todo-list',
       page: () => const TodoListPage(),
@@ -63,8 +71,6 @@ class AppPages {
         final Todo todo = Get.arguments as Todo;
         return TodoDetailPage(todo: todo);
       },
-      // Halaman detail tidak perlu binding,
-      // karena controllernya sudah di-load oleh '/todo-list'
     ),
   ];
 }

@@ -35,6 +35,7 @@ class ClassController extends GetxController {
 
   @override
   void onInit() {
+    //?todo --- PERBAIKAN: Kembalikan pemanggilan data otomatis ---
     fetchCourses();
     super.onInit();
   }

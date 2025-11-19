@@ -61,6 +61,7 @@ class TodoController extends GetxController {
 
   @override
   void onInit() {
+    //?todo --- PERBAIKAN: Kembalikan pemanggilan data otomatis ---
     fetchTodos();
     super.onInit();
   }
@@ -81,7 +82,10 @@ class TodoController extends GetxController {
 
   Future<void> addTodo(String text) async {
     try {
+      // Manajer mengambil "Kartu Resep" (UseCase)
       await addTodoUseCase(text);
+
+      // PENTING: Panggil 'fetchTodos' lagi untuk refresh
       await fetchTodos();
     } catch (e) {
       errorMessage("Gagal menambah: ${e.toString()}");
