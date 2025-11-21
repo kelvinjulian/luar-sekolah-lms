@@ -14,12 +14,17 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // --- PERBAIKAN: Sintaks Kotlin DSL menggunakan 'is...' ---
+        isCoreLibraryDesugaringEnabled = true
+        // ---------------------------------------------------------
+
+        // Ubah ke VERSION_1_8 agar kompatibel dengan desugaring library
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
@@ -27,7 +32,11 @@ android {
         applicationId = "com.example.luar_sekolah_lms"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        
+        // --- PERBAIKAN: MinSDK 21 ---
         minSdk = flutter.minSdkVersion
+        // ----------------------------
+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -45,3 +54,9 @@ android {
 flutter {
     source = "../.."
 }
+
+// --- PERBAIKAN: Dependency Block untuk Kotlin DSL ---
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+}
+// ---------------------------------------------------
