@@ -3,7 +3,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
-// Handler Background (Tetap sama)
+// --- TAMBAHAN IMPORT TIMEZONE ---
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("🔔 BACKGROUND MSG: ${message.messageId}");
@@ -17,23 +20,32 @@ class NotificationService extends GetxService {
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
-  // Definisi Channel Android agar Prioritas Tinggi (Heads-up)
   final AndroidNotificationChannel _androidChannel =
       const AndroidNotificationChannel(
-        'todo_channel_id', // ID harus konsisten
-        'Todo Notifications', // Nama Channel
+        'todo_channel_id',
+        'Todo Notifications',
         description: 'Notifikasi untuk Todo App',
-        importance: Importance.max, // PENTING: Agar muncul pop-up banner
+        importance: Importance.max,
       );
 
   Future<void> init() async {
     try {
-      // 1. Request Permission (FCM)
+      // 1. INIT TIMEZONE DATA
+      tz.initializeTimeZones();
+
+      // --- WAJIB ADA: PAKSA SET LOKASI ---
+      try {
+        // Memaksa sistem notifikasi menggunakan waktu Jakarta
+        // meskipun emulator settingannya UTC/Amerika.
+        var jakarta = tz.getLocation('Asia/Jakarta');
+        tz.setLocalLocation(jakarta);
+      } catch (e) {
+        print("Gagal set lokasi timezone: $e");
+      }
+      // -----------------------------------
+
       await _requestPermission();
 
-      // 2. Setup Local Notifications
-      // Inisialisasi icon (pastikan icon ada di android/app/src/main/res/drawable)
-      // Menggunakan @mipmap/ic_launcher adalah opsi paling aman default Flutter
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -57,37 +69,26 @@ class NotificationService extends GetxService {
         },
       );
 
-      // --- BAGIAN PENTING UNTUK ANDROID ---
-      // Membuat Channel secara eksplisit di sistem Android
-      // Ini memastikan setting 'Importance.max' diterapkan
       final platform = _localNotificationsPlugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
       await platform?.createNotificationChannel(_androidChannel);
-      // -------------------------------------
 
-      // 3. Konfigurasi FCM agar 'Alert' diperbolehkan saat Foreground (Khusus iOS/Android 12+)
       await _messaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
         sound: true,
       );
 
-      // 4. Listeners
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
 
-      // Listener Foreground
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print('🔔 FOREGROUND MSG: ${message.notification?.title}');
-
-        // PENTING: Ambil notifikasi dari pesan FCM
         RemoteNotification? notification = message.notification;
         AndroidNotification? android = message.notification?.android;
 
-        // Jika notifikasi ada, dan aplikasi sedang di Android -> Tampilkan Local Notification
         if (notification != null && android != null) {
           showLocalNotification(
             title: notification.title ?? 'Notifikasi',
@@ -95,17 +96,12 @@ class NotificationService extends GetxService {
           );
         }
       });
-
-      // 5. Ambil Token
-      String? token = await _messaging.getToken();
-      print("🔔 FCM TOKEN: $token");
     } catch (e) {
       print("🔔 ERROR NOTIFICATION INIT: $e");
     }
   }
 
   Future<void> _requestPermission() async {
-    // Request Permission untuk Android 13+
     if (Platform.isAndroid) {
       final platform = _localNotificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -114,20 +110,13 @@ class NotificationService extends GetxService {
       await platform?.requestNotificationsPermission();
     }
 
-    // Request Permission untuk FCM
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    print('🔔 Status Izin Notifikasi: ${settings.authorizationStatus}');
+    await _messaging.requestPermission(alert: true, badge: true, sound: true);
   }
 
   Future<void> showLocalNotification({
     required String title,
     required String body,
   }) async {
-    // Gunakan detail dari Channel yang sudah kita buat di atas
     AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           _androidChannel.id,
@@ -135,9 +124,7 @@ class NotificationService extends GetxService {
           channelDescription: _androidChannel.description,
           importance: Importance.max,
           priority: Priority.high,
-          ticker: 'ticker',
-          showWhen: true,
-          icon: '@mipmap/ic_launcher', // Pastikan icon sesuai
+          icon: '@mipmap/ic_launcher',
         );
 
     NotificationDetails platformChannelSpecifics = NotificationDetails(
@@ -150,5 +137,78 @@ class NotificationService extends GetxService {
       body,
       platformChannelSpecifics,
     );
+  }
+
+  // --- FUNGSI BARU: JADWALKAN NOTIFIKASI ---
+  // --- FUNGSI DEBUG SCHEDULE ---
+  Future<void> scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    try {
+      // 1. CEK WAKTU SEKARANG VS JADWAL
+      final now = DateTime.now();
+      final tzScheduled = tz.TZDateTime.from(scheduledDate, tz.local);
+
+      print("🕵️ [DEBUG] Waktu Sekarang (App): $now");
+      print("🕵️ [DEBUG] Waktu Jadwal (Input): $scheduledDate");
+      print("🕵️ [DEBUG] Waktu Konversi Timezone: $tzScheduled");
+
+      if (scheduledDate.isBefore(now)) {
+        print(
+          "❌ [ERROR] Waktu jadwal sudah LEWAT! Notifikasi tidak akan muncul.",
+        );
+        return;
+      }
+
+      // 2. LAKUKAN PENJADWALAN
+      await _localNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzScheduled,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _androidChannel.id,
+            _androidChannel.name,
+            channelDescription: _androidChannel.description,
+            importance: Importance.max, // Pastikan Max
+            priority: Priority.high, // Pastikan High
+            icon: '@mipmap/ic_launcher',
+            // Tambahkan ini biar suara default keluar
+            playSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+      print("✅ [DEBUG] Perintah zonedSchedule berhasil dikirim ke plugin.");
+
+      // 3. CEK APAKAH BENAR-BENAR MASUK ANTRIAN?
+      final List<PendingNotificationRequest> pendingNotifications =
+          await _localNotificationsPlugin.pendingNotificationRequests();
+
+      print(
+        "🕵️ [DEBUG] Jumlah Antrian Pending: ${pendingNotifications.length}",
+      );
+
+      // Cari notifikasi kita di antrian
+      final isQueued = pendingNotifications.any((n) => n.id == id);
+      if (isQueued) {
+        print(
+          "🎉 [SUKSES] Notifikasi ID $id DITEMUKAN dalam daftar antrian Android!",
+        );
+      } else {
+        print(
+          "💀 [GAGAL] Notifikasi ID $id TIDAK ADA di antrian. Kemungkinan ditolak OS atau Timezone salah.",
+        );
+      }
+    } catch (e) {
+      print("❌ [ERROR CRITICAL] Gagal menjadwalkan: $e");
+    }
   }
 }
