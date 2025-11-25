@@ -3,7 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
-// --- TAMBAHAN IMPORT TIMEZONE ---
+// --- TIMEZONE ---
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -30,19 +30,13 @@ class NotificationService extends GetxService {
 
   Future<void> init() async {
     try {
-      // 1. INIT TIMEZONE DATA
       tz.initializeTimeZones();
-
-      // --- WAJIB ADA: PAKSA SET LOKASI ---
       try {
-        // Memaksa sistem notifikasi menggunakan waktu Jakarta
-        // meskipun emulator settingannya UTC/Amerika.
         var jakarta = tz.getLocation('Asia/Jakarta');
         tz.setLocalLocation(jakarta);
       } catch (e) {
         print("Gagal set lokasi timezone: $e");
       }
-      // -----------------------------------
 
       await _requestPermission();
 
@@ -96,6 +90,15 @@ class NotificationService extends GetxService {
           );
         }
       });
+
+      // GET TOKEN SAAT INIT
+      await getDeviceToken();
+
+      // LISTENER TOKEN BARU
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        print("♻️ TOKEN BARU: $newToken");
+        // jika mau update token ke backend, lakukan di sini
+      });
     } catch (e) {
       print("🔔 ERROR NOTIFICATION INIT: $e");
     }
@@ -111,6 +114,19 @@ class NotificationService extends GetxService {
     }
 
     await _messaging.requestPermission(alert: true, badge: true, sound: true);
+  }
+
+  // FUNCTION GET TOKEN
+  Future<String?> getDeviceToken() async {
+    try {
+      final token = await _messaging.getToken();
+      print("📌 FCM TOKEN: $token");
+
+      return token;
+    } catch (e) {
+      print("❌ ERROR GET TOKEN: $e");
+      return null;
+    }
   }
 
   Future<void> showLocalNotification({
@@ -139,8 +155,6 @@ class NotificationService extends GetxService {
     );
   }
 
-  // --- FUNGSI BARU: JADWALKAN NOTIFIKASI ---
-  // --- FUNGSI DEBUG SCHEDULE ---
   Future<void> scheduleNotification({
     required int id,
     required String title,
@@ -148,7 +162,6 @@ class NotificationService extends GetxService {
     required DateTime scheduledDate,
   }) async {
     try {
-      // 1. CEK WAKTU SEKARANG VS JADWAL
       final now = DateTime.now();
       final tzScheduled = tz.TZDateTime.from(scheduledDate, tz.local);
 
@@ -163,7 +176,6 @@ class NotificationService extends GetxService {
         return;
       }
 
-      // 2. LAKUKAN PENJADWALAN
       await _localNotificationsPlugin.zonedSchedule(
         id,
         title,
@@ -174,10 +186,9 @@ class NotificationService extends GetxService {
             _androidChannel.id,
             _androidChannel.name,
             channelDescription: _androidChannel.description,
-            importance: Importance.max, // Pastikan Max
-            priority: Priority.high, // Pastikan High
+            importance: Importance.max,
+            priority: Priority.high,
             icon: '@mipmap/ic_launcher',
-            // Tambahkan ini biar suara default keluar
             playSound: true,
           ),
         ),
@@ -186,9 +197,6 @@ class NotificationService extends GetxService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
 
-      print("✅ [DEBUG] Perintah zonedSchedule berhasil dikirim ke plugin.");
-
-      // 3. CEK APAKAH BENAR-BENAR MASUK ANTRIAN?
       final List<PendingNotificationRequest> pendingNotifications =
           await _localNotificationsPlugin.pendingNotificationRequests();
 
@@ -196,16 +204,13 @@ class NotificationService extends GetxService {
         "🕵️ [DEBUG] Jumlah Antrian Pending: ${pendingNotifications.length}",
       );
 
-      // Cari notifikasi kita di antrian
       final isQueued = pendingNotifications.any((n) => n.id == id);
       if (isQueued) {
         print(
           "🎉 [SUKSES] Notifikasi ID $id DITEMUKAN dalam daftar antrian Android!",
         );
       } else {
-        print(
-          "💀 [GAGAL] Notifikasi ID $id TIDAK ADA di antrian. Kemungkinan ditolak OS atau Timezone salah.",
-        );
+        print("💀 [GAGAL] Notifikasi ID $id TIDAK ADA di antrian.");
       }
     } catch (e) {
       print("❌ [ERROR CRITICAL] Gagal menjadwalkan: $e");
