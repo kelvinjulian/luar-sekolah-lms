@@ -106,7 +106,7 @@ class ClassPage extends StatelessWidget {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               builder: (BuildContext sheetContext) {
-                return Container(
+                return SizedBox(
                   height: MediaQuery.of(context).size.height * 0.85,
                   child: const ClipRRect(
                     borderRadius: BorderRadius.only(
@@ -228,7 +228,7 @@ class ClassPage extends StatelessWidget {
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (BuildContext sheetContext) {
-                        return Container(
+                        return SizedBox(
                           height: MediaQuery.of(context).size.height * 0.85,
                           child: ClipRRect(
                             borderRadius: const BorderRadius.only(
