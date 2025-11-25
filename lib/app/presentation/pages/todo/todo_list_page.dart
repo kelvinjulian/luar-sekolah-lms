@@ -243,39 +243,62 @@ class TodoListPage extends StatelessWidget {
           controller.toggleTodoStatus(todo);
         },
       ),
-      trailing: IconButton(
-        icon: Icon(Icons.delete_outline, color: Colors.red.shade700),
-        onPressed: () async {
-          final bool? shouldDelete = await showDialog<bool>(
-            context: context,
-            builder: (dialogContext) {
-              return AlertDialog(
-                title: const Text('Konfirmasi Hapus'),
-                content: Text(
-                  'Apakah Anda yakin ingin menghapus "${todo.text}"?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    child: const Text('Batal'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    child: const Text('Hapus'),
-                  ),
-                ],
-              );
+      // --- BAGIAN YANG DIUBAH ---
+      // Kita bungkus tombol Alarm dan Delete dalam Row
+      trailing: Row(
+        mainAxisSize:
+            MainAxisSize.min, // Agar Row tidak memakan sisa lebar layar
+        children: [
+          // 1. TOMBOL ALARM (BARU)
+          IconButton(
+            icon: const Icon(Icons.alarm, color: Colors.orange),
+            tooltip: 'Ingatkan 5 detik lagi',
+            onPressed: () {
+              // Memanggil fungsi schedule yang tadi kita buat di controller
+              controller.scheduleTodoReminder(todo);
             },
-          );
+          ),
 
-          if (shouldDelete == true) {
-            if (todo.id != null) {
-              controller.removeTodo(todo.id!);
-            }
-          }
-        },
+          // 2. TOMBOL HAPUS (LAMA)
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.red.shade700),
+            tooltip: 'Hapus',
+            onPressed: () async {
+              final bool? shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) {
+                  return AlertDialog(
+                    title: const Text('Konfirmasi Hapus'),
+                    content: Text(
+                      'Apakah Anda yakin ingin menghapus "${todo.text}"?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Batal'),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: const Text('Hapus'),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (shouldDelete == true) {
+                if (todo.id != null) {
+                  controller.removeTodo(todo.id!);
+                }
+              }
+            },
+          ),
+        ],
       ),
+      // --------------------------
       onTap: () {
         Get.toNamed('/todo-detail', arguments: todo);
       },
