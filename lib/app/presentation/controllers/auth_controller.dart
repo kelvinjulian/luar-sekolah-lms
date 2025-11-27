@@ -12,7 +12,11 @@ class AuthController extends GetxController {
   final LogoutUseCase logoutUseCase;
   final IAuthRepository authRepository;
 
-  final isLoading = false.obs;
+  // --- REACTIVE STATE ---
+  final RxBool isLoading = false.obs;
+  final RxString errorMessage = ''.obs; // Variable penampung error
+  final RxString successMessage = ''.obs; // Variable penampung sukses
+
   final Rxn<User> _user = Rxn<User>();
   User? get user => _user.value;
   Stream<User?> get authStateChanges => authRepository.authStateChanges;
@@ -30,11 +34,42 @@ class AuthController extends GetxController {
     _user.bindStream(authRepository.authStateChanges);
   }
 
+  // DI SINI KUNCINYA: Memasang "pendengar" (Listener)
   @override
   void onReady() {
     super.onReady();
     _handleAuthChanged(_user.value);
     ever(_user, _handleAuthChanged);
+
+    // 1. DENGARKAN ERROR MESSAGE
+    // Setiap kali 'errorMessage' berubah isinya, fungsi ini jalan
+    ever(errorMessage, (String msg) {
+      if (msg.isNotEmpty && !Get.testMode) {
+        Get.snackbar(
+          "Terjadi Kesalahan",
+          msg,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFE53935),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(10),
+        );
+      }
+    });
+
+    // 2. DENGARKAN SUCCESS MESSAGE
+    // Setiap kali 'successMessage' berubah isinya, fungsi ini jalan
+    ever(successMessage, (String msg) {
+      if (msg.isNotEmpty && !Get.testMode) {
+        Get.snackbar(
+          "Berhasil",
+          msg,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF4CAF50),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(10),
+        );
+      }
+    });
   }
 
   void _handleAuthChanged(User? user) {
@@ -45,53 +80,44 @@ class AuthController extends GetxController {
     }
   }
 
+  // Fungsi reset agar pesan lama tidak muncul lagi saat retry
+  void _resetMessages() {
+    errorMessage.value = '';
+    successMessage.value = '';
+  }
+
   //? --- LOGIN ---
   Future<void> login(String email, String password) async {
     isLoading(true);
+    _resetMessages(); // Reset dulu sebelum mulai
+
     try {
       await loginUseCase(email, password);
     } on FirebaseAuthException catch (e) {
-      // PENTING: Pengecekan ini MENCEGAH crash 'Null check operator' saat testing
-      if (!Get.testMode) {
-        Get.snackbar(
-          "Login Gagal",
-          e.message ?? "Terjadi kesalahan",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFE53935),
-          colorText: const Color(0xFFFFFFFF),
-        );
-      }
+      // Update state, nanti 'ever' di onReady yang akan menampilkan snackbar
+      errorMessage.value = e.message ?? "Gagal Login";
+    } catch (e) {
+      errorMessage.value = "Terjadi kesalahan tidak terduga";
     } finally {
-      isLoading(false); // Pastikan loading mati
+      isLoading(false);
     }
   }
 
   //? --- REGISTER ---
   Future<void> register(String email, String password) async {
     isLoading(true);
+    _resetMessages();
+
     try {
       await registerUseCase(email, password);
-
-      if (!Get.testMode) {
-        Get.snackbar(
-          "Registrasi Berhasil",
-          "Selamat datang di aplikasi!",
-          backgroundColor: const Color(0xFF4CAF50),
-          colorText: const Color(0xFFFFFFFF),
-        );
-      }
+      successMessage.value = "Registrasi Berhasil! Silakan Login.";
     } on FirebaseAuthException catch (e) {
-      if (!Get.testMode) {
-        Get.snackbar(
-          "Register Gagal",
-          e.message ?? "Terjadi kesalahan",
-          backgroundColor: const Color(0xFFE53935),
-          colorText: const Color(0xFFFFFFFF),
-        );
-      }
+      errorMessage.value = e.message ?? "Gagal Registrasi";
       if (e.code == 'email-already-in-use') {
         Get.toNamed('/login');
       }
+    } catch (e) {
+      errorMessage.value = "Terjadi kesalahan tidak terduga";
     } finally {
       isLoading(false);
     }
@@ -100,17 +126,11 @@ class AuthController extends GetxController {
   // --- LOGOUT ---
   Future<void> logout() async {
     isLoading(true);
+    _resetMessages();
     try {
       await logoutUseCase();
     } on FirebaseAuthException catch (e) {
-      if (!Get.testMode) {
-        Get.snackbar(
-          "Logout Gagal",
-          e.message ?? "Terjadi kesalahan",
-          backgroundColor: const Color(0xFFE53935),
-          colorText: const Color(0xFFFFFFFF),
-        );
-      }
+      errorMessage.value = e.message ?? "Gagal Logout";
     } finally {
       isLoading(false);
     }
