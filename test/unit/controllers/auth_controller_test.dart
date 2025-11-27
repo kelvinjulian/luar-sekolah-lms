@@ -1,8 +1,9 @@
+// test/unit/controllers/auth_controller_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Pastikan path import ini sesuai struktur folder Anda
+// Sesuaikan import path
 import 'package:luar_sekolah_lms/app/presentation/controllers/auth_controller.dart';
 import 'package:luar_sekolah_lms/app/domain/repositories/i_auth_repository.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/auth/login_use_case.dart';
@@ -36,10 +37,9 @@ void main() {
       () => mockAuthRepository.authStateChanges,
     ).thenAnswer((_) => Stream.value(null));
 
-    // Reset GetX sebelum setiap test
+    // Kita tidak perlu Get.testMode = true lagi untuk mencegah crash,
+    // tapi tetap berguna untuk binding GetX standar.
     Get.reset();
-    // Set testMode ke true agar controller men-skip snackbar
-    Get.testMode = true;
 
     controller = AuthController(
       loginUseCase: mockLoginUseCase,
@@ -50,61 +50,49 @@ void main() {
     controller.onInit();
   });
 
-  tearDown(() {
-    controller.dispose();
-    Get.reset();
-  });
-
-  group('AuthController Login Logic', () {
+  group('AuthController Logic (Reactive State Pattern)', () {
     const email = 'test@example.com';
     const password = 'password123';
 
-    test('login should set loading state correctly on success', () async {
-      // ARRANGE
-      // Gunakan delay kecil agar simulasi lebih nyata
-      when(() => mockLoginUseCase(email, password)).thenAnswer((_) async {
-        await Future.delayed(const Duration(milliseconds: 10));
-        return MockUserCredential();
-      });
+    test(
+      'login success: isLoading updates, errorMessage remains empty',
+      () async {
+        // ARRANGE
+        when(
+          () => mockLoginUseCase(email, password),
+        ).thenAnswer((_) async => MockUserCredential());
 
-      // ACT
-      final future = controller.login(email, password);
+        // ACT
+        final future = controller.login(email, password);
 
-      // ASSERT 1: Loading harus true (karena ada delay di mock)
-      expect(controller.isLoading.value, isTrue);
-
-      await future;
-
-      // ASSERT 2: Loading harus false setelah selesai
-      expect(controller.isLoading.value, isFalse);
-    });
-
-    test('login should set loading state correctly on error', () async {
-      // ARRANGE
-      // PENTING: Gunakan thenAnswer + async throw agar tidak terjadi secara instan (synchronous)
-      // Ini mencegah isLoading berubah false sebelum kita sempat mengeceknya.
-      when(() => mockLoginUseCase(email, password)).thenAnswer((_) async {
-        await Future.delayed(const Duration(milliseconds: 10));
-        throw FirebaseAuthException(
-          code: 'user-not-found',
-          message: 'User not found',
-        );
-      });
-
-      // ACT
-      final future = controller.login(email, password);
-
-      // ASSERT 1: Sekarang ini akan sukses karena error tidak langsung dilempar
-      expect(controller.isLoading.value, isTrue);
-
-      try {
+        expect(controller.isLoading.value, isTrue); // Cek loading awal
         await future;
-      } catch (e) {
-        // Error ditangkap, snackbar dilewati karena Get.testMode = true
-      }
 
-      // ASSERT 2: Loading harus kembali false
+        // ASSERT
+        expect(controller.isLoading.value, isFalse); // Cek loading akhir
+        expect(
+          controller.errorMessage.value,
+          isEmpty,
+        ); // Pastikan TIDAK ada error
+      },
+    );
+
+    test('login failure: updates errorMessage correctly', () async {
+      // ARRANGE
+      const errorMsg = 'User not found in database';
+      when(() => mockLoginUseCase(email, password)).thenThrow(
+        FirebaseAuthException(code: 'user-not-found', message: errorMsg),
+      );
+
+      // ACT
+      await controller.login(email, password);
+
+      // ASSERT
       expect(controller.isLoading.value, isFalse);
+
+      // DI SINI KUNCI TESTINGNYA:
+      // Kita cek apakah variabel errorMessage terisi dengan pesan yang benar
+      expect(controller.errorMessage.value, errorMsg);
     });
   });
 }

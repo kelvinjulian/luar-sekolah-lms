@@ -16,24 +16,53 @@ void main() {
     useCase = AddTodoUseCase(mockRepository);
   });
 
-  test('should call repository.addTodo and return Todo entity', () async {
-    // ARRANGE
-    const todoText = 'New Task from UseCase';
-    final mockTodo = Todo(id: 'a1', text: todoText, completed: false);
+  group('AddTodoUseCase Tests', () {
+    // 1. SKENARIO SUKSES (Happy Path)
+    test('should call repository with trimmed text and return Todo', () async {
+      // ARRANGE
+      const rawText = '   Makan Siang   '; // Ada spasi
+      const cleanText = 'Makan Siang'; // Harapan setelah di-trim
+      final mockTodo = Todo(id: '1', text: cleanText, completed: false);
 
-    // Stub: Repository akan mengembalikan mockTodo saat dipanggil
-    when(
-      () => mockRepository.addTodo(todoText),
-    ).thenAnswer((_) async => mockTodo);
+      when(
+        () => mockRepository.addTodo(cleanText),
+      ).thenAnswer((_) async => mockTodo);
 
-    // ACT
-    final result = await useCase(todoText);
+      // ACT
+      final result = await useCase(rawText);
 
-    // ASSERT
-    // Pastikan repository.addTodo dipanggil 1 kali
-    verify(() => mockRepository.addTodo(todoText)).called(1);
+      // ASSERT
+      expect(result, equals(mockTodo));
+      // Pastikan repository dipanggil dengan teks yang SUDAH BERSIH
+      verify(() => mockRepository.addTodo(cleanText)).called(1);
+    });
 
-    // Pastikan UseCase mengembalikan objek yang benar
-    expect(result, equals(mockTodo));
+    // 2. SKENARIO VALIDASI KOSONG
+    test('should throw ValidationException when text is empty', () async {
+      // ACT & ASSERT
+      // Cara test exception di mocktail:
+      expect(() => useCase(''), throwsA(isA<ValidationException>()));
+
+      // Pastikan repository TIDAK PERNAH dipanggil
+      verifyZeroInteractions(mockRepository);
+    });
+
+    // 3. SKENARIO VALIDASI WHITESPACE ONLY
+    test('should throw ValidationException when text is only spaces', () async {
+      expect(() => useCase('     '), throwsA(isA<ValidationException>()));
+      verifyZeroInteractions(mockRepository);
+    });
+
+    // 4. SKENARIO REPOSITORY ERROR (Exception Propagation)
+    test('should rethrow exception when repository fails', () async {
+      // ARRANGE
+      const text = 'Test Error';
+      when(
+        () => mockRepository.addTodo(text),
+      ).thenThrow(Exception('Database Error'));
+
+      // ACT & ASSERT
+      expect(() => useCase(text), throwsA(isA<Exception>()));
+    });
   });
 }
