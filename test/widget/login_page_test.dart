@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:luar_sekolah_lms/app/presentation/pages/login_page.dart';
-import 'package:luar_sekolah_lms/app/presentation/widgets/input_field.dart';
 import 'package:luar_sekolah_lms/app/presentation/controllers/auth_controller.dart';
 import 'package:luar_sekolah_lms/app/domain/repositories/i_auth_repository.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/auth/login_use_case.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/auth/register_use_case.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/auth/logout_use_case.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // Dibutuhkan untuk UserCredential
 
-// --- MOCK DUMMY CLASSES ---
-class MockIAuthRepositoryDummy extends Mock implements IAuthRepository {}
+class MockIAuthRepository extends Mock implements IAuthRepository {}
 
 class MockLoginUseCase extends Mock implements LoginUseCase {}
 
@@ -21,86 +19,142 @@ class MockRegisterUseCase extends Mock implements RegisterUseCase {}
 
 class MockLogoutUseCase extends Mock implements LogoutUseCase {}
 
+class MockUserCredential extends Mock implements UserCredential {}
+
 void main() {
-  testWidgets('LoginPage must render components and check button state', (
-    WidgetTester tester,
-  ) async {
-    // 1. ARRANGE: Setup Mock Dependencies
-    final mockRepo = MockIAuthRepositoryDummy();
+  late MockIAuthRepository mockRepo;
+  late MockLoginUseCase mockLoginUseCase;
 
-    // Mock stream authStateChanges agar tidak crash saat onInit
+  setUp(() {
+    mockRepo = MockIAuthRepository();
+    mockLoginUseCase = MockLoginUseCase();
     when(() => mockRepo.authStateChanges).thenAnswer((_) => Stream.value(null));
+    Get.reset();
+  });
 
-    // Inject AuthController dengan mock minimal
-    Get.put(
-      AuthController(
-        loginUseCase: MockLoginUseCase(),
-        registerUseCase: MockRegisterUseCase(),
-        logoutUseCase: MockLogoutUseCase(),
-        authRepository: mockRepo,
-      ),
+  Future<void> loadLoginUI(WidgetTester tester) async {
+    // --- SOLUSI LAYAR ---
+    // Kita set lebar fisik 2400 dan pixel ratio 3.0 -> Lebar Logis 800px
+    // Ini menjamin tidak ada overflow horizontal (Row muat)
+    tester.view.physicalSize = const Size(2400, 3000);
+    tester.view.devicePixelRatio = 3.0;
+
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = AuthController(
+      loginUseCase: mockLoginUseCase,
+      registerUseCase: MockRegisterUseCase(),
+      logoutUseCase: MockLogoutUseCase(),
+      authRepository: mockRepo,
     );
 
-    // 2. ACT: Render UI dengan Route Definition (agar navigasi tidak crash)
+    Get.put(controller);
+
     await tester.pumpWidget(
       GetMaterialApp(
         home: const LoginPage(),
         getPages: [
           GetPage(name: '/login', page: () => const LoginPage()),
           GetPage(
-            name: '/register',
-            page: () => const Center(child: Text("Register Page")),
-          ),
-          GetPage(
             name: '/home',
-            page: () => const Center(child: Text("Home Page")),
+            page: () => const Scaffold(body: Text("Home")),
           ),
         ],
       ),
     );
+  }
 
+  testWidgets('LoginPage flow: Render -> Input -> Click -> Call Logic', (
+    WidgetTester tester,
+  ) async {
+    await loadLoginUI(tester);
     await tester.pumpAndSettle();
 
-    // Cari tombol Masuk
-    final loginButtonFinder = find.widgetWithText(ElevatedButton, 'Masuk');
+    // Cek komponen
+    expect(find.text('Email Aktif'), findsOneWidget);
 
-    // ASSERT A: Status Awal Tombol (Disabled)
-    final buttonBefore = tester.widget<ElevatedButton>(loginButtonFinder);
-    expect(
-      buttonBefore.onPressed,
-      isNull,
-      reason: "Tombol harus mati saat form kosong",
-    );
+    final btnFinder = find.widgetWithText(ElevatedButton, 'Masuk');
 
-    // --- 3. INTERAKSI: ISI FORM ---
+    // Gunakan ensureVisible agar aman
+    await tester.ensureVisible(btnFinder);
+    await tester.pumpAndSettle();
 
-    // Strategi: Cari InputField berdasarkan label
-    final emailInputFinder = find.descendant(
-      of: find.widgetWithText(InputField, 'Email Aktif'),
-      matching: find.byType(TextFormField),
-    );
+    final btnBefore = tester.widget<ElevatedButton>(btnFinder);
+    expect(btnBefore.onPressed, isNull);
 
-    final passwordInputFinder = find.descendant(
-      of: find.widgetWithText(InputField, 'Password'),
-      matching: find.byType(TextFormField),
-    );
+    // Isi Form
+    // Cari field pertama (Email)
+    final emailFinder = find.byType(TextFormField).at(0);
+    await tester.ensureVisible(emailFinder);
+    await tester.enterText(emailFinder, 'user@test.com');
 
-    // ACT A: Isi Email
-    await tester.enterText(emailInputFinder, 'test@a.com');
+    // Cari field kedua (Password)
+    final passFinder = find.byType(TextFormField).at(1);
+    await tester.ensureVisible(passFinder);
+    await tester.enterText(passFinder, 'password123');
+
     await tester.pump();
 
-    // ACT B: Isi Password
-    await tester.enterText(passwordInputFinder, '123456');
+    // Cek Tombol Hidup
+    await tester.ensureVisible(btnFinder);
+    final btnAfter = tester.widget<ElevatedButton>(btnFinder);
+    expect(btnAfter.onPressed, isNotNull);
+
+    // Klik
+    when(
+      () => mockLoginUseCase.call(any(), any()),
+    ).thenAnswer((_) async => MockUserCredential());
+
+    await tester.tap(btnFinder);
     await tester.pump();
 
-    // ASSERT B: Status Akhir Tombol (Enabled)
-    final buttonAfter = tester.widget<ElevatedButton>(loginButtonFinder);
-    expect(
-      buttonAfter.onPressed,
-      isNotNull,
-      reason: "Tombol harus aktif setelah form terisi",
-    );
+    verify(
+      () => mockLoginUseCase.call('user@test.com', 'password123'),
+    ).called(1);
   });
 
-  tearDown(() => Get.reset());
+  testWidgets('LoginPage shows error validation UI', (
+    WidgetTester tester,
+  ) async {
+    await loadLoginUI(tester);
+    await tester.pumpAndSettle();
+
+    // Isi form salah
+    final emailFinder = find.byType(TextFormField).at(0);
+    final passFinder = find.byType(TextFormField).at(1);
+
+    await tester.ensureVisible(emailFinder);
+    await tester.enterText(emailFinder, 'bukan-email');
+
+    await tester.ensureVisible(passFinder);
+    await tester.enterText(passFinder, '123');
+    await tester.pump();
+
+    // Klik tombol untuk trigger validasi
+    final btnFinder = find.widgetWithText(ElevatedButton, 'Masuk');
+    await tester.ensureVisible(btnFinder);
+    await tester.pumpAndSettle();
+
+    await tester.tap(btnFinder);
+    await tester.pump();
+
+    // --- SOLUSI FINDER SCROLL ---
+    // Cari widget scrollable apapun (bisa ListView, SingleChildScrollView, dll)
+    final scrollableFinder = find.byType(Scrollable);
+
+    // Jika ketemu scrollable, coba scroll ke atas untuk melihat error message
+    if (scrollableFinder.evaluate().isNotEmpty) {
+      // Drag ke bawah (offset positif Y) untuk scroll ke atas
+      await tester.drag(scrollableFinder.first, const Offset(0, 300));
+      await tester.pumpAndSettle();
+    }
+
+    // Assert error message
+    // Cari teks error apapun yang mungkin muncul
+    // Bisa jadi errornya 'Format email tidak valid' atau 'Email tidak valid' (sesuaikan dengan kode Anda)
+    expect(find.textContaining('email', findRichText: true), findsWidgets);
+    // Jika ingin spesifik:
+    expect(find.text('Format email tidak valid'), findsOneWidget);
+  });
 }
