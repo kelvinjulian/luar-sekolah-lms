@@ -1,8 +1,10 @@
+//* 1. IMPORT
+// Mengimpor library testing, state management, dan mocking.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Import Domain & Controller
+// Import Domain (Entities & UseCases) dan Controller yang akan dites
 import 'package:luar_sekolah_lms/app/presentation/controllers/todo_controller.dart';
 import 'package:luar_sekolah_lms/app/domain/entities/todo.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/todo/add_todo.dart';
@@ -11,7 +13,9 @@ import 'package:luar_sekolah_lms/app/domain/usecases/todo/update_todo.dart';
 import 'package:luar_sekolah_lms/app/domain/usecases/todo/delete_todo.dart';
 import 'package:luar_sekolah_lms/app/core/services/notification_service.dart';
 
-// --- MOCKS ---
+//* 2. MOCK CLASS DEFINITIONS
+// Kita membuat tiruan (Mock) untuk semua dependensi eksternal.
+// Tujuannya agar Controller bisa dites secara TERISOLASI tanpa menyentuh Database/Plugin asli.
 class MockGetAllTodosUseCase extends Mock implements GetAllTodosUseCase {}
 
 class MockAddTodoUseCase extends Mock implements AddTodoUseCase {}
@@ -23,6 +27,7 @@ class MockDeleteTodoUseCase extends Mock implements DeleteTodoUseCase {}
 class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
+  // Variabel yang akan digunakan di setiap test
   late TodoController controller;
   late MockGetAllTodosUseCase mockGetAll;
   late MockAddTodoUseCase mockAdd;
@@ -30,24 +35,35 @@ void main() {
   late MockDeleteTodoUseCase mockDelete;
   late MockNotificationService mockNotif;
 
+  //* 3. SETUP (Jalan sebelum setiap unit test)
   setUp(() {
+    // Inisialisasi Mock Object
     mockGetAll = MockGetAllTodosUseCase();
     mockAdd = MockAddTodoUseCase();
     mockUpdate = MockUpdateTodoUseCase();
     mockDelete = MockDeleteTodoUseCase();
     mockNotif = MockNotificationService();
 
-    // Register Fallback Value (Penting untuk Mocktail jika ada argument object)
+    //? Register Fallback Value:
+    //? Penting agar Mocktail mengerti tipe data 'Todo' kustom kita saat menggunakan 'any()'.
     registerFallbackValue(Todo(id: '0', text: 'fallback', completed: false));
 
-    // STUB DEFAULT: Fetch mengembalikan list kosong agar onInit aman
-    when(() => mockGetAll()).thenAnswer((_) async => []);
+    //? Stub Default:
+    //? Pastikan getAllTodos mengembalikan list kosong atau null saat Controller diinisialisasi (onInit),
+    //? agar tidak terjadi crash sebelum test dimulai.
+    when(
+      () => mockGetAll(
+        limit: any(named: 'limit'),
+        startAfter: any(named: 'startAfter'),
+      ),
+    ).thenAnswer((_) async => []);
 
-    // Setup GetX Environment
+    // Setup Environment GetX untuk testing
     Get.testMode = true;
     Get.reset();
 
-    // INJECT Service via Constructor
+    //? INJECT DEPENDENCIES VIA CONSTRUCTOR:
+    //? Ini adalah hasil refactoring kita agar Controller mudah dites (Testable).
     controller = TodoController(
       getAllTodosUseCase: mockGetAll,
       addTodoUseCase: mockAdd,
@@ -56,7 +72,7 @@ void main() {
       notificationService: mockNotif,
     );
 
-    // Trigger onInit manual untuk memuat data awal
+    // Trigger manual onInit untuk memuat data awal (jika diperlukan logic onInit)
     controller.onInit();
   });
 
@@ -65,32 +81,42 @@ void main() {
   });
 
   group('TodoController Tests', () {
-    // 1. TEST FETCH DATA
+    //* SKENARIO 1: TEST FETCH DATA (Pagination Logic)
     test('fetchTodos success updates allTodos list', () async {
-      // ARRANGE
+      //? ARRANGE
       final dummyList = [Todo(id: '1', text: 'Test', completed: false)];
-      when(() => mockGetAll()).thenAnswer((_) async => dummyList);
 
-      // ACT
-      await controller.fetchTodos();
+      // Stub: UseCase menerima parameter pagination (limit, startAfter)
+      when(
+        () => mockGetAll(
+          limit: any(named: 'limit'),
+          startAfter: any(named: 'startAfter'),
+        ),
+      ).thenAnswer((_) async => dummyList);
 
-      // ASSERT
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.allTodos.length, 1);
-      expect(controller.allTodos.first.text, 'Test');
+      //? ACT
+      // PENTING: Gunakan isRefresh: true untuk mereset state pagination (hasMore)
+      // agar controller mau mengambil data baru.
+      await controller.fetchTodos(isRefresh: true);
+
+      //? ASSERT
+      expect(controller.isLoading.value, isFalse); // Loading mati
+      expect(controller.allTodos.length, 1); // Data masuk
+      expect(controller.allTodos.first.text, 'Test'); // Data benar
     });
 
-    // 2. TEST ADD TODO
+    //* SKENARIO 2: TEST ADD TODO (Orkestrasi Logic + Notifikasi)
     test(
       'addTodo success triggers UseCase, Fetch, and Local Notification',
       () async {
-        // ARRANGE
+        //? ARRANGE
         const newText = "New Task";
-        // Stub Add: sukses
+        // Stub Add UseCase: Sukses & return object baru
         when(() => mockAdd(newText)).thenAnswer(
           (_) async => Todo(id: '2', text: newText, completed: false),
         );
-        // Stub Notif: sukses
+
+        // Stub Notification: Sukses (return void)
         when(
           () => mockNotif.showLocalNotification(
             title: any(named: 'title'),
@@ -98,17 +124,23 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        // ACT
+        //? ACT
         await controller.addTodo(newText);
 
-        // ASSERT
-        // 1. Pastikan Add UseCase dipanggil
+        //? ASSERT
+        // 1. Cek Logic Utama (Simpan ke DB)
         verify(() => mockAdd(newText)).called(1);
-        // 2. Pastikan data di-fetch ulang
-        verify(() => mockGetAll()).called(greaterThan(0));
+        // 2. Cek Refresh List (Fetch dipanggil ulang)
+        // Kita pakai any() untuk parameter karena kita cuma peduli fungsinya dipanggil
+        verify(
+          () => mockGetAll(
+            limit: any(named: 'limit'),
+            startAfter: any(named: 'startAfter'),
+          ),
+        ).called(greaterThan(0));
 
-        // 3. Pastikan Notifikasi muncul
-        // PERBAIKAN: Gunakan any(named: 'body', that: contains(...))
+        // 3. Cek Side Effect (Notifikasi Muncul)
+        // Gunakan 'contains' untuk memastikan pesan notifikasi mengandung teks Todo yang diinput.
         verify(
           () => mockNotif.showLocalNotification(
             title: "Catatan Baru Ditambahkan",
@@ -118,17 +150,17 @@ void main() {
       },
     );
 
-    // 3. TEST TOGGLE STATUS
+    //* SKENARIO 3: TEST TOGGLE STATUS
     test(
       'toggleTodoStatus updates Todo and sends correct notification',
       () async {
-        // ARRANGE
+        //? ARRANGE
         final todo = Todo(id: '1', text: 'Task A', completed: false);
-        // Stub Update
-        when(
-          () => mockUpdate(any()),
-        ).thenAnswer((_) async => todo.copyWith(completed: true));
-        // Stub Notif
+
+        // Stub Update: Sukses
+        when(() => mockUpdate(any())).thenAnswer((_) async => Future.value());
+
+        // Stub Notif: Sukses
         when(
           () => mockNotif.showLocalNotification(
             title: any(named: 'title'),
@@ -136,17 +168,16 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        // ACT
+        //? ACT
         await controller.toggleTodoStatus(todo);
 
-        // ASSERT
-        // Cek UseCase dipanggil dengan status 'completed: true'
+        //? ASSERT
+        // Cek apakah UseCase dipanggil dengan status yang SUDAH DIBALIK (completed: true)
         final capturedArg =
             verify(() => mockUpdate(captureAny())).captured.first as Todo;
         expect(capturedArg.completed, true);
 
-        // Cek Notifikasi pesannya benar ("Selesai dikerjakan")
-        // PERBAIKAN: Gunakan any(named: 'body', that: contains(...))
+        // Cek apakah Notifikasi menampilkan pesan "Selesai dikerjakan"
         verify(
           () => mockNotif.showLocalNotification(
             title: "Status Diperbarui",
@@ -156,11 +187,13 @@ void main() {
       },
     );
 
-    // 4. TEST REMOVE TODO (Logic Special)
+    //* SKENARIO 4: TEST REMOVE TODO (Logic Khusus)
     test(
       'removeTodo finds title locally before deleting and notifying',
       () async {
-        // ARRANGE: Isi dulu allTodos dengan data dummy
+        //? ARRANGE
+        // Kita harus isi dulu state 'allTodos' dengan data dummy,
+        // karena logika removeTodo perlu mencari judul item sebelum dihapus.
         final todoToDelete = Todo(
           id: '99',
           text: 'Delete Me',
@@ -178,13 +211,15 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        // ACT
+        //? ACT
         await controller.removeTodo('99');
 
-        // ASSERT
+        //? ASSERT
+        // 1. Pastikan UseCase Delete dipanggil
         verify(() => mockDelete('99')).called(1);
-        // Notifikasi harus berisi judul "Delete Me" yang diambil dari local state
-        // PERBAIKAN: Gunakan any(named: 'body', that: contains(...))
+
+        // 2. Pastikan Notifikasi menggunakan Judul Todo yang benar ("Delete Me")
+        // Ini membuktikan logika "Find before Delete" bekerja.
         verify(
           () => mockNotif.showLocalNotification(
             title: "Catatan Dihapus",
@@ -194,29 +229,31 @@ void main() {
       },
     );
 
-    // 5. TEST FILTERING
+    //* SKENARIO 5: TEST FILTERING (UI Logic)
     test('filteredTodos returns correct list based on status', () {
-      // ARRANGE: Setup 2 items
+      //? ARRANGE: Siapkan data campuran
       controller.allTodos.addAll([
         Todo(id: '1', text: 'Pending Task', completed: false),
         Todo(id: '2', text: 'Done Task', completed: true),
       ]);
 
-      // ACT & ASSERT (Pending)
+      //? ACT & ASSERT (Cek Filter Pending)
       controller.setFilter(FilterStatus.pending);
       expect(controller.filteredTodos.length, 1);
       expect(controller.filteredTodos.first.text, 'Pending Task');
 
-      // ACT & ASSERT (Completed)
+      //? ACT & ASSERT (Cek Filter Completed)
       controller.setFilter(FilterStatus.completed);
       expect(controller.filteredTodos.length, 1);
       expect(controller.filteredTodos.first.text, 'Done Task');
     });
 
-    // 6. TEST SCHEDULE REMINDER (UI Feedback)
+    //* SKENARIO 6: TEST SCHEDULE REMINDER (Reactive State Feedback)
     test('scheduleTodoReminder sets successMessage for Snackbar', () async {
-      // ARRANGE
+      //? ARRANGE
       final todo = Todo(id: '1', text: 'Schedule Me', completed: false);
+
+      // Stub Schedule Notification
       when(
         () => mockNotif.scheduleNotification(
           id: any(named: 'id'),
@@ -226,11 +263,13 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      // ACT
+      //? ACT
       await controller.scheduleTodoReminder(todo);
 
-      // ASSERT
-      // Cek apakah successMessage terisi (ini yang memicu Snackbar di UI)
+      //? ASSERT
+      // Kita tidak mengecek Snackbar UI (Get.snackbar) agar tidak crash.
+      // Kita mengecek apakah variabel state 'successMessage' terisi.
+      // Ini membuktikan feedback berhasil dikirim ke UI.
       expect(controller.successMessage.value, "Tunggu 5 detik...");
       expect(controller.errorMessage.value, isNull);
     });
