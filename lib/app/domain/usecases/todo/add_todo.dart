@@ -17,6 +17,9 @@ class AddTodoUseCase {
     // 1. TRIM: Hapus spasi depan/belakang
     final cleanText = text.trim();
 
+    // // KODE SABOTASE (SALAH)
+    // final cleanText = text; // <-- Lupa di-trim!
+
     // 2. VALIDASI: Cek kosong
     if (cleanText.isEmpty) {
       throw ValidationException("Teks Todo tidak boleh kosong");

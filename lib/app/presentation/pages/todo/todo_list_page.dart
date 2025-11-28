@@ -112,7 +112,7 @@ class TodoListPage extends StatelessWidget {
         children: [
           _buildSearchAndFilter(controller),
 
-          // ✨ FITUR BARU: TOTAL DATA COUNTER ✨
+          // FITUR BARU: TOTAL DATA COUNTER
           _buildTotalCount(controller),
 
           Expanded(
