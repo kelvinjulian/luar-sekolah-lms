@@ -1,23 +1,20 @@
 import '../../domain/entities/todo.dart';
 import '../../domain/repositories/i_todo_repository.dart';
-//?todo --- PERBAIKAN: Ganti import remote ke firestore ---
 import '../datasources/todo_firestore_data_source.dart';
 
 class TodoRepositoryImpl implements ITodoRepository {
-  //?todo --- PERBAIKAN: Ganti tipe data source ---
-  // Koki tahu nomor Supplier-nya (di-inject oleh Binding)
   final TodoFirestoreDataSource dataSource;
 
   TodoRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<Todo>> getTodos() {
-    return dataSource.fetchTodos();
+  //? UPDATE: Teruskan parameter pagination ke DataSource
+  Future<List<Todo>> getTodos({int limit = 20, Todo? startAfter}) {
+    return dataSource.fetchTodos(limit: limit, startAfter: startAfter);
   }
 
   @override
   Future<Todo> addTodo(String text) {
-    // Koki meneruskan perintah ke Supplier
     return dataSource.createTodo(text);
   }
 
