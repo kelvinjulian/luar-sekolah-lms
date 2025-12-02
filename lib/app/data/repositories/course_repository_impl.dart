@@ -1,29 +1,31 @@
-// lib/app/data/repositories/course_repository_impl.dart
+import 'dart:io';
 import '../../domain/entities/course.dart';
 import '../../domain/repositories/i_course_repository.dart';
-import '../datasources/course_dummy_data_source.dart';
+import '../datasources/course_remote_data_source.dart'; // Pastikan import ini benar
 
 class CourseRepositoryImpl implements ICourseRepository {
-  final CourseDummyDataSource dataSource;
+  // PERBAIKAN: Tipe datanya harus CourseRemoteDataSource, JANGAN 'Course'
+  final CourseRemoteDataSource dataSource;
 
   CourseRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<Course>> getCourses() async {
-    final listMap = await dataSource.getCourses();
-    return listMap.map((map) => Course.fromMap(map)).toList();
+  Future<List<Course>> getCourses({
+    int limit = 20,
+    int offset = 0,
+    String? tag,
+  }) async {
+    return await dataSource.getCourses(limit: limit, offset: offset, tag: tag);
   }
 
   @override
-  Future<Course> addCourse(Map<String, dynamic> data) async {
-    final map = await dataSource.addCourse(data);
-    return Course.fromMap(map);
+  Future<void> addCourse(Course course, File? imageFile) async {
+    await dataSource.addCourse(course, imageFile);
   }
 
   @override
-  Future<Course> updateCourse(Map<String, dynamic> data) async {
-    final map = await dataSource.updateCourse(data);
-    return Course.fromMap(map);
+  Future<void> updateCourse(Course course, File? imageFile) async {
+    await dataSource.updateCourse(course, imageFile);
   }
 
   @override

@@ -391,23 +391,21 @@ class SubscriptionCard extends StatelessWidget {
 
 // TODO
 // =================================================================
-// 6. WIDGET ADMIN COURSE CARD (UNTUK HALAMAN KELAS ADMIN)
+// 6. WIDGET ADMIN COURSE CARD (PERBAIKAN: Support Network Image & Anti-Overflow)
 // =================================================================
-// Kartu ini mirip dengan CourseCard, tapi dengan tambahan tombol aksi
-// seperti Edit dan Delete untuk keperluan admin.
 class AdminCourseCard extends StatelessWidget {
   final String title;
   final String image;
   final List<String> tags;
   final List<Color> tagColors;
   final String price;
-  final VoidCallback onEdit; // Fungsi yang dipanggil saat 'Edit' diklik
-  final VoidCallback onDelete; // Fungsi yang dipanggil saat 'Delete' diklik
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const AdminCourseCard({
     super.key,
     required this.title,
-    required this.image,
+    required this.image, // Sekarang ini berisi URL (http...)
     required this.tags,
     required this.tagColors,
     required this.price,
@@ -419,7 +417,7 @@ class AdminCourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12.0),
-      margin: const EdgeInsets.only(bottom: 16.0), // Jarak antar kartu
+      margin: const EdgeInsets.only(bottom: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -435,37 +433,71 @@ class AdminCourseCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar Thumbnail di kiri
+          // 1. GAMBAR THUMBNAIL (Fixed Size & Network Image)
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: Image.asset(image, width: 80, height: 80, fit: BoxFit.cover),
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: Image.network(
+                image,
+                fit: BoxFit.cover,
+                // Jika URL dari API error/mati/dummy, tampilkan gambar aset lokal
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
+                    'assets/images/course1.png', // Pastikan aset ini ada
+                    fit: BoxFit.cover,
+                  );
+                },
+                // Loading indicator saat gambar sedang didownload
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
           const SizedBox(width: 12),
 
-          // Informasi kelas di tengah (Expanded agar memenuhi sisa ruang)
+          // 2. INFORMASI KELAS (Expanded mencegah Overflow ke kanan)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Judul Kelas
                 Text(
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2, // Batasi 2 baris
+                  overflow:
+                      TextOverflow.ellipsis, // Titik-titik jika kepanjangan
                 ),
                 const SizedBox(height: 8),
+
+                // Tags (Wrap sudah aman di dalam Expanded)
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: tags.asMap().entries.map((entry) {
                     final index = entry.key;
                     final tag = entry.value;
-                    final color = tagColors.length > index
+                    // Mencegah error "RangeError" jika warna kurang
+                    final color = (index < tagColors.length)
                         ? tagColors[index]
                         : Colors.grey;
+
                     return Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -480,18 +512,21 @@ class AdminCourseCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 8),
+
+                // Harga
                 Text(
                   price,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: lsGreen,
+                    color: lsGreen, // Menggunakan konstanta lsGreen dari atas
                   ),
                 ),
               ],
@@ -499,8 +534,10 @@ class AdminCourseCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Menu Aksi (tiga titik) di kanan
+          // 3. MENU AKSI (Titik Tiga)
           PopupMenuButton<String>(
+            padding: EdgeInsets.zero, // Hilangkan padding bawaan biar rapi
+            constraints: const BoxConstraints(),
             onSelected: (value) {
               if (value == 'edit') {
                 onEdit();
@@ -512,6 +549,7 @@ class AdminCourseCard extends StatelessWidget {
               const PopupMenuItem<String>(
                 value: 'edit',
                 child: ListTile(
+                  contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.edit_outlined, size: 20),
                   title: Text('Edit'),
                 ),
@@ -519,6 +557,7 @@ class AdminCourseCard extends StatelessWidget {
               const PopupMenuItem<String>(
                 value: 'delete',
                 child: ListTile(
+                  contentPadding: EdgeInsets.zero,
                   leading: Icon(
                     Icons.delete_outline,
                     size: 20,
