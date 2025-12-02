@@ -85,7 +85,7 @@ void main() {
     await tester.pumpAndSettle(); // Tunggu semua animasi/render selesai
 
     // Verifikasi Elemen Awal
-    expect(find.text('Email Aktif'), findsOneWidget); // Pastikan label ada
+    expect(find.text('Email Aktif'), findsOneWidget); //? Pastikan label ada
 
     final btnFinder = find.widgetWithText(ElevatedButton, 'Masuk');
 
@@ -94,11 +94,11 @@ void main() {
     await tester.ensureVisible(btnFinder);
     await tester.pumpAndSettle();
 
-    // Pastikan tombol Mati (Disabled) karena form masih kosong
+    //? Pastikan tombol Mati (Disabled) karena form masih kosong
     final btnBefore = tester.widget<ElevatedButton>(btnFinder);
     expect(btnBefore.onPressed, isNull);
 
-    // Isi Form
+    //? Isi Form
     // Cari field pertama (Email) dan isi
     final emailFinder = find.byType(TextFormField).at(0);
     await tester.ensureVisible(emailFinder);
@@ -111,7 +111,7 @@ void main() {
 
     await tester.pump(); // Rebuild UI agar state tombol berubah
 
-    // Pastikan tombol Hidup (Enabled)
+    //? Pastikan tombol Hidup (Enabled)
     await tester.ensureVisible(btnFinder);
     final btnAfter = tester.widget<ElevatedButton>(btnFinder);
     expect(btnAfter.onPressed, isNotNull);
@@ -121,18 +121,17 @@ void main() {
     when(
       () => mockLoginUseCase.call(any(), any()),
     ).thenAnswer((_) async => MockUserCredential());
-
     await tester.tap(btnFinder); // Klik tombol
     await tester.pump(); // Proses event klik
 
-    // VERIFIKASI (ASSERT)
-    // Buktikan bahwa UI benar-benar memanggil fungsi logic 'login'
+    //? VERIFIKASI (ASSERT)
+    // Buktikan bahwa UI benar-benar memanggil fungsi use case logic 'login'
     verify(
       () => mockLoginUseCase.call('user@test.com', 'password123'),
     ).called(1);
   });
 
-  //* 6. TEST KEDUA: VALIDASI UI
+  //* 6. TEST KEDUA: VALIDASI UI & ERROR MESSAGE
   testWidgets('LoginPage shows error validation UI', (
     WidgetTester tester,
   ) async {
@@ -170,7 +169,7 @@ void main() {
 
     // Assert error message
     // Cari teks error apapun yang mungkin muncul
-    // Bisa jadi errornya 'Format email tidak valid' atau 'Email tidak valid'
+    //? Bisa jadi errornya 'Format email tidak valid' atau 'Email tidak valid'
     expect(find.textContaining('email', findRichText: true), findsWidgets);
     // Jika ingin spesifik:
     expect(find.text('Format email tidak valid'), findsOneWidget);

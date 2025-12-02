@@ -42,7 +42,7 @@ void main() {
       // ASSERT
       verify(
         () => mockRepository.loginWithEmail(cleanEmail, password),
-      ).called(1);
+      ).called(1); // perbaiki
     });
 
     // --- SKENARIO VALIDASI EXISTING ---
@@ -61,8 +61,7 @@ void main() {
       );
     });
 
-    // --- SKENARIO VALIDASI PASSWORD BARU ---
-
+    // --- SKENARIO VALIDASI PASSWORD ---
     test('should throw Exception when password is empty', () async {
       expect(
         () => useCase('test@example.com', ''),

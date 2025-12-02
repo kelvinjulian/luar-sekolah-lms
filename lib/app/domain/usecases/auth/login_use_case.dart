@@ -16,8 +16,9 @@ class LoginUseCase {
     final cleanPassword = password.trim();
 
     // Validasi Email
-    if (cleanEmail.isEmpty)
+    if (cleanEmail.isEmpty) {
       throw AuthValidationException("Email tidak boleh kosong");
+    }
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(cleanEmail)) {
       throw AuthValidationException("Format email tidak valid");
     }

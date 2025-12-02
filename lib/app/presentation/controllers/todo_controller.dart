@@ -88,7 +88,7 @@ class TodoController extends GetxController {
               scrollController.position.maxScrollExtent &&
           !isMoreLoading.value &&
           hasMore) {
-        // Jika mentok bawah, load halaman berikutnya
+        // Jika mentok bawah, sedang tidak mengambil data, masih ada halaman berikutnya, maka fetch data selanjutnya
         fetchTodos();
       }
     });
@@ -133,7 +133,11 @@ class TodoController extends GetxController {
   // --- FETCH DATA (PAGINATION) ---
   Future<void> fetchTodos({bool isRefresh = false}) async {
     // Validasi kondisi
-    if (!hasMore && !isRefresh) return;
+
+    //? Jika hasMore = false → berarti data di server sudah habis → tidak usah fetch lagi.
+    if (!hasMore && !isRefresh) return; //
+
+    //? Jika sedang loading atau moreLoading → cegah pemanggilan ulang agar tidak double request.
     if (isLoading.value || isMoreLoading.value) return;
 
     // Reset State jika Refresh
@@ -143,7 +147,9 @@ class TodoController extends GetxController {
       hasMore = true;
       allTodos.clear();
       errorMessage.value = null;
-    } else {
+    }
+    //? Ini terjadi saat user scroll ke bawah
+    else {
       isMoreLoading(true);
     }
 
@@ -153,23 +159,28 @@ class TodoController extends GetxController {
 
       // Panggil UseCase dengan parameter Pagination
       final newTodos = await getAllTodosUseCase(
-        limit: pageSize,
+        limit: pageSize, // Ambil data berdasarkan limit (jumlah per halaman)
         startAfter: lastTodo, // Kirim objek Todo terakhir sebagai kursor
+        // Bila data datang, tambahkan ke list
       );
 
       // Cek apakah data habis
+      //? jika data kurang dari pageSize → artinya halaman terakhir → stop load more
       if (newTodos.length < pageSize) {
         hasMore = false;
       }
 
       // Update kursor untuk halaman berikutnya
+      //? jika data ada, simpan lastTodo sebagai kursor halaman berikutnya
       if (newTodos.isNotEmpty) {
         lastTodo = newTodos.last;
       }
 
       // Masukkan data ke list
       allTodos.addAll(newTodos);
-    } catch (e) {
+    }
+    // error handling
+    catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading(false);

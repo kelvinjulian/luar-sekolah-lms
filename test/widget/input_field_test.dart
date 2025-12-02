@@ -82,7 +82,7 @@ void main() {
       ),
     );
 
-    // 1. Cek Awal: Pastikan error belum muncul
+    // 1. Cek Awal: Pastikan error belum muncul (ketika tombol submit belum ditekan)
     expect(find.text('Error Test'), findsNothing);
 
     // 2. ACT: Tekan tombol submit untuk memicu formKey.currentState.validate()

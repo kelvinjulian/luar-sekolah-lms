@@ -29,6 +29,7 @@ void main() {
     const password = 'password123';
 
     //* SKENARIO 1: HAPPY PATH (SUKSES)
+    // Simulasikan DataSource mengembalikan UserCredential sukses, return data user
     test(
       'loginWithEmail should call dataSource.loginWithEmail and return UserCredential',
       () async {
@@ -53,6 +54,7 @@ void main() {
 
     //* SKENARIO 2: NEGATIVE PATH (LOGIN GAGAL - Firebase Error)
     // Penting untuk memastikan Controller bisa menampilkan pesan error yang spesifik.
+    // User salah password, Firebase mengembalikan error wrong-password
     test('should rethrow FirebaseAuthException when login fails', () async {
       //? ARRANGE
       // Simulasi DataSource melempar error Firebase (misal password salah)
@@ -69,20 +71,22 @@ void main() {
     });
 
     //* SKENARIO 3: NEGATIVE PATH (GENERAL ERROR)
+    // server down / jaringan mati / bug internal.
     test('should throw Exception when unknown error occurs', () async {
       //? ARRANGE
-      when(
-        () => mockDataSource.loginWithEmail(email, password),
-      ).thenThrow(Exception('Server Down'));
+      when(() => mockDataSource.loginWithEmail(email, password)).thenThrow(
+        Exception('Server Down'),
+      ); // Simulasi error umum yang tidak spesifik
 
       //? ACT & ASSERT
       expect(
         () => repository.loginWithEmail(email, password),
-        throwsA(isA<Exception>()),
+        throwsA(isA<Exception>()), // Repository tetap melempar error tersebut
       );
     });
 
     //* SKENARIO 4: LOGOUT
+    // User menekan tombol logout, seharusnya repository meneruskan ke datasource
     test('logout should call dataSource.logout', () async {
       //? ARRANGE
       when(() => mockDataSource.logout()).thenAnswer((_) async {});

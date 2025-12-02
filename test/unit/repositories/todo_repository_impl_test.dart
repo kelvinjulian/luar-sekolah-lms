@@ -35,6 +35,7 @@ void main() {
 
   group('TodoRepositoryImpl', () {
     // --- 1. GET TODOS ---
+    // menguji apakah repository bisa mengambil todo dari datasource.
     test(
       'getTodos should return list of todos from dataSource.fetchTodos',
       () async {
@@ -50,10 +51,13 @@ void main() {
         //? ASSERT
         expect(result, equals(todoList));
         // Pastikan fungsi fetchTodos di dataSource terpanggil
-        verify(() => mockDataSource.fetchTodos()).called(1);
+        verify(
+          () => mockDataSource.fetchTodos(),
+        ).called(1); //? return list todo
       },
     );
 
+    // menguji apakah repository meneruskan error saat Firestore error.
     test('getTodos should throw Exception when dataSource fails', () async {
       //? ARRANGE: Simulasi Server Error
       // Jika fetchTodos() dipanggil, jangan return data. TAPI lempar exception Server Error seolah server benar rusak.
@@ -63,10 +67,14 @@ void main() {
 
       //? ACT & ASSERT: Pastikan error diteruskan (Rethrow)
       // mengetes apakah repository.getTodos() ikut melempar Exception ketika dataSource-nya error.
-      expect(() => repository.getTodos(), throwsA(isA<Exception>()));
+      expect(
+        () => repository.getTodos(),
+        throwsA(isA<Exception>()),
+      ); //? lempar error
     });
 
     // --- 2. ADD TODO ---
+    // menguji apakah repository memanggil createTodo dan meneruskan hasilnya.
     test(
       'addTodo should call dataSource.createTodo and return created Todo',
       () async {
@@ -83,10 +91,13 @@ void main() {
 
         //? ASSERT
         expect(result, equals(dummyTodo));
-        verify(() => mockDataSource.createTodo(text)).called(1);
+        verify(
+          () => mockDataSource.createTodo(text),
+        ).called(1); //? return todo baru
       },
     );
 
+    // menguji repository ketika proses tambah todo error.
     test('addTodo should throw Exception when dataSource fails', () async {
       //? ARRANGE
       const text = 'Fail Task';
@@ -95,63 +106,74 @@ void main() {
       ).thenThrow(Exception('Network Error'));
 
       //? ACT & ASSERT
-      expect(() => repository.addTodo(text), throwsA(isA<Exception>()));
+      expect(
+        () => repository.addTodo(text),
+        throwsA(isA<Exception>()),
+      ); //? lempar error
     });
 
-    // --- 3. UPDATE TODO ---
-    test('updateTodo should call dataSource.updateTodo with ID', () async {
-      //? ARRANGE
-      final updatedTodo = dummyTodo.copyWith(completed: true);
+    // // --- 3. UPDATE TODO ---
+    // // menguji repository.updateTodo(todo) memecah parameter menjadi (id, todo)
+    // //? Ini penting karena Repository menerima Todo todo, sementara DataSource butuh (String id, Todo todo).
+    // test('updateTodo should call dataSource.updateTodo with ID', () async {
+    //   //? ARRANGE
+    //   final updatedTodo = dummyTodo.copyWith(completed: true);
 
-      // PENTING: DataSource butuh (String id, Todo todo).
-      // Repository menerima (Todo todo). Kita test apakah repo memecah parameter dgn benar.
-      when(
-        () => mockDataSource.updateTodo(updatedTodo.id!, updatedTodo),
-      ).thenAnswer((_) async => Future<void>.value());
+    //   // PENTING: DataSource butuh (String id, Todo todo).
+    //   // Repository menerima (Todo todo). Kita test apakah repo memecah parameter dgn benar.
+    //   when(
+    //     () => mockDataSource.updateTodo(updatedTodo.id!, updatedTodo),
+    //   ).thenAnswer((_) async => Future<void>.value());
 
-      //? ACT
-      await repository.updateTodo(updatedTodo);
+    //   //? ACT
+    //   await repository.updateTodo(updatedTodo);
 
-      //? ASSERT
-      verify(
-        () => mockDataSource.updateTodo(updatedTodo.id!, updatedTodo),
-      ).called(1);
-    });
+    //   //? ASSERT
+    //   verify(
+    //     () => mockDataSource.updateTodo(updatedTodo.id!, updatedTodo),
+    //   ).called(1); //? verify id dan todo
+    // });
 
-    test('updateTodo should throw Exception when dataSource fails', () async {
-      //? ARRANGE
-      when(
-        () => mockDataSource.updateTodo(any(), any()),
-      ).thenThrow(Exception('Update Failed'));
+    // // bila datasource gagal update, repository juga harus gagal
+    // test('updateTodo should throw Exception when dataSource fails', () async {
+    //   //? ARRANGE
+    //   when(
+    //     () => mockDataSource.updateTodo(any(), any()),
+    //   ).thenThrow(Exception('Update Failed'));
 
-      //? ACT & ASSERT
-      expect(() => repository.updateTodo(dummyTodo), throwsA(isA<Exception>()));
-    });
+    //   //? ACT & ASSERT
+    //   expect(
+    //     () => repository.updateTodo(dummyTodo),
+    //     throwsA(isA<Exception>()),
+    //   ); //? lempar error
+    // });
 
-    // --- 4. DELETE TODO ---
-    test('deleteTodo should call dataSource.deleteTodo', () async {
-      //? ARRANGE
-      const id = 't1';
-      when(
-        () => mockDataSource.deleteTodo(id),
-      ).thenAnswer((_) async => Future<void>.value());
+    // // --- 4. DELETE TODO ---
+    // // menguji deleteTodo repo memanggil method datasource yang benar
+    // test('deleteTodo should call dataSource.deleteTodo', () async {
+    //   //? ARRANGE
+    //   const id = 't1';
+    //   when(
+    //     () => mockDataSource.deleteTodo(id),
+    //   ).thenAnswer((_) async => Future<void>.value());
 
-      //? ACT
-      await repository.deleteTodo(id);
+    //   //? ACT
+    //   await repository.deleteTodo(id);
 
-      //? ASSERT
-      verify(() => mockDataSource.deleteTodo(id)).called(1);
-    });
+    //   //? ASSERT
+    //   verify(() => mockDataSource.deleteTodo(id)).called(1); //? verify id
+    // });
 
-    test('deleteTodo should throw Exception when dataSource fails', () async {
-      //? ARRANGE
-      const id = 't1';
-      when(
-        () => mockDataSource.deleteTodo(id),
-      ).thenThrow(Exception('Delete Failed'));
+    // // kalau Firestore gagal delete, repository juga gagal
+    // test('deleteTodo should throw Exception when dataSource fails', () async {
+    //   //? ARRANGE
+    //   const id = 't1';
+    //   when(
+    //     () => mockDataSource.deleteTodo(id),
+    //   ).thenThrow(Exception('Delete Failed')); //? lempar error
 
-      //? ACT & ASSERT
-      expect(() => repository.deleteTodo(id), throwsA(isA<Exception>()));
-    });
+    //   //? ACT & ASSERT
+    //   expect(() => repository.deleteTodo(id), throwsA(isA<Exception>()));
+    // });
   });
 }

@@ -14,35 +14,40 @@ class TodoFirestoreDataSource {
     return _db.collection('users').doc(userId).collection('todos');
   }
 
-  // PERBAIKAN DI SINI:
   // Ubah parameter 'startAfter' agar menerima objek 'Todo', bukan DocumentSnapshot
   Future<List<Todo>> fetchTodos({int limit = 20, Todo? startAfter}) async {
     try {
-      // 1. Query Dasar: Urutkan berdasarkan documentId (default sort yang stabil)
-      //    Atau gunakan 'createdAt' jika Anda menyimpan field tersebut.
+      //? 1. Query Dasar: Urutkan berdasarkan documentId (default sort yang stabil)
+      //    Atau gunakan 'createdAt' jika menyimpan field tersebut.
       var query = _getTodoCollection()
-          .orderBy(FieldPath.documentId)
-          .limit(limit);
+          .orderBy(
+            FieldPath.documentId,
+          ) // mengurutkan data berdasarkan documentId
+          .limit(limit); // batasi jumlah data yang diambil sesuai limit (20)
 
-      // 2. Logika Pagination (Object-Based Cursor)
+      //? 2. Logika Pagination (Object-Based Cursor)
       if (startAfter != null && startAfter.id != null) {
         // Trik: Kita ambil DocumentSnapshot dari ID Todo tersebut
         final lastDocSnapshot = await _getTodoCollection()
             .doc(startAfter.id)
-            .get();
+            .get(); // untuk mendapatkan snapshot (dokumen asli dari Firestore)
 
         // Jika dokumen ditemukan, gunakan sebagai titik mulai (Cursor)
         if (lastDocSnapshot.exists) {
-          query = query.startAfterDocument(lastDocSnapshot);
+          query = query.startAfterDocument(
+            lastDocSnapshot,
+          ); // ambil 20 data lagi, dimulai SETELAH dokumen yang diambil sebelumnya.
         }
       }
 
+      //? eksekusi query, firestore mengambil data
       final snapshot = await query.get();
 
+      //? Firestore tidak menyimpan field id di dalam JSON, jadi harus kita tambahkan sendiri
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
-        return Todo.fromJson(data);
+        return Todo.fromJson(data); // dikonversi ke object Todo
       }).toList();
     } catch (e) {
       throw Exception('Gagal memuat data: $e');
