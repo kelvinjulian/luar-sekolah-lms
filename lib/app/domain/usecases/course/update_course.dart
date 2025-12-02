@@ -1,14 +1,13 @@
-// lib/app/domain/usecases/course/update_course.dart
-import '../../entities/course.dart';
+import 'dart:io';
 import '../../repositories/i_course_repository.dart';
+import '../../entities/course.dart';
 
 class UpdateCourseUseCase {
   final ICourseRepository repository;
 
   UpdateCourseUseCase(this.repository);
 
-  // Menerima Map data mentah dari form
-  Future<Course> call(Map<String, dynamic> data) {
-    return repository.updateCourse(data);
+  Future<void> call(Course course, File? imageFile) async {
+    return repository.updateCourse(course, imageFile);
   }
 }

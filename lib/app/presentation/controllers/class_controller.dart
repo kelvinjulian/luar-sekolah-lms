@@ -1,17 +1,14 @@
-// lib/app/presentation/controllers/class_controller.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-// --- VERIFIKASI IMPORT ---
 import '../../domain/entities/course.dart';
 import '../../domain/usecases/course/add_course.dart';
 import '../../domain/usecases/course/delete_course.dart';
 import '../../domain/usecases/course/get_all_courses.dart';
 import '../../domain/usecases/course/update_course.dart';
-// -------------------------
 
 class ClassController extends GetxController {
-  // --- INJEKSI USE CASES ---
   final GetAllCoursesUseCase getAllCoursesUseCase;
   final AddCourseUseCase addCourseUseCase;
   final UpdateCourseUseCase updateCourseUseCase;
@@ -24,106 +21,239 @@ class ClassController extends GetxController {
     required this.deleteCourseUseCase,
   });
 
-  // --- STATE REAKTIF (.obs) ---
+  // State
   final isLoading = false.obs;
-  final errorMessage = Rxn<String>();
-  final allClasses = <Course>[].obs; // Ini adalah RxList
+  final isMoreLoading = false.obs;
+  final courseList = <Course>[].obs;
+  final currentTabIndex = 0.obs;
+  final searchQuery = "".obs;
 
-  // State UI (Filter)
-  final currentTabIndex = 0.obs; // Ini adalah RxInt
-  final searchQuery = "".obs; // Ini adalah RxString
+  // Pagination Config
+  final int _limit = 20;
+  int _offset = 0;
+  bool _hasMore = true;
+
+  final ScrollController scrollController = ScrollController();
 
   @override
   void onInit() {
-    //?todo --- PERBAIKAN: Kembalikan pemanggilan data otomatis ---
-    fetchCourses();
     super.onInit();
+    fetchCourses(isRefresh: true);
   }
 
-  // --- GETTER PINTAR ---
-  List<Course> get filteredClasses {
-    //? --- PERBAIKAN DI SINI ---
-    //? 'allClasses' adalah RxList, jadi tidak perlu '.value'
-    List<Course> list = allClasses;
-    //? --------------------------
-
-    //? '.value' diperlukan di sini
-    if (currentTabIndex.value == 1) {
-      list = list.where((course) => course.tags.contains("SPL")).toList();
-    } else if (currentTabIndex.value == 2) {
-      list = list
-          .where(
-            (course) =>
-                !course.tags.contains("SPL") &&
-                !course.tags.contains("Prakerja"),
-          )
-          .toList();
-    }
-
-    //? '.value' diperlukan di sini
-    if (searchQuery.value.isNotEmpty) {
-      list = list
-          .where(
-            (course) => course.nama.toLowerCase().contains(
-              searchQuery.value.toLowerCase(),
-            ),
-          )
-          .toList();
-    }
-    return list;
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
   }
 
-  // --- FUNGSI AKSI ---
-
-  Future<void> fetchCourses() async {
-    try {
+  // --- LOGIKA FETCH DATA UTAMA ---
+  Future<void> fetchCourses({bool isRefresh = false}) async {
+    if (isRefresh) {
       isLoading(true);
-      errorMessage(null);
-      final courses = await getAllCoursesUseCase();
-      allClasses.assignAll(courses); // 'assignAll' untuk update RxList
+      _offset = 0;
+      _hasMore = true;
+      courseList.clear();
+      // Reset status load more juga biar aman
+      isMoreLoading(false);
+    }
+    // CATATAN: Logika isMoreLoading(true) dipindah ke loadMoreCourses
+    // agar bisa di-lock SEBELUM delay.
+
+    try {
+      String? tagFilter;
+      switch (currentTabIndex.value) {
+        case 0:
+          tagFilter = 'populer';
+          break;
+        case 1:
+          tagFilter = 'spl';
+          break;
+        case 2:
+          tagFilter = 'prakerja';
+          break;
+        case 3:
+          tagFilter = null;
+          break;
+      }
+
+      final newCourses = await getAllCoursesUseCase(
+        limit: _limit,
+        offset: _offset,
+        tag: tagFilter,
+      );
+
+      if (newCourses.length < _limit) {
+        _hasMore = false;
+      }
+
+      if (isRefresh) {
+        courseList.assignAll(newCourses);
+      } else {
+        courseList.addAll(newCourses);
+      }
+
+      _offset += newCourses.length;
     } catch (e) {
-      errorMessage(e.toString());
+      print("Error Fetch: $e");
+      if (isRefresh) Get.snackbar("Error", "Gagal memuat data: $e");
     } finally {
       isLoading(false);
+      isMoreLoading(false); // Buka kunci loading
     }
   }
 
-  void updateTab(int index) {
-    currentTabIndex(index);
+  // --- PERBAIKAN BUG DATA RATUSAN (RACE CONDITION) ---
+  Future<void> loadMoreCourses() async {
+    // 1. CEK DULU: Jika sedang loading atau data habis, STOP.
+    if (isLoading.value || isMoreLoading.value || !_hasMore) return;
+
+    // 2. KUNCI SEGERA! (PENTING)
+    // Ubah jadi true SEBELUM delay, supaya listener scroll tidak memanggil ulang.
+    isMoreLoading(true);
+
+    // 3. BARU DELAY (Efek visual)
+    await Future.delayed(const Duration(seconds: 2));
+
+    // 4. Panggil API (tanpa parameter isRefresh)
+    // Kita panggil fungsi internal yang tidak mereset offset
+    await fetchCourses(isRefresh: false);
   }
 
   void updateSearchQuery(String query) {
     searchQuery(query);
   }
 
-  Future<void> addClass(Map<String, dynamic> newClassData) async {
-    try {
-      await addCourseUseCase(newClassData);
-      await fetchCourses(); // Refresh
-    } catch (e) {
-      Get.snackbar("Error", "Gagal menambah kelas: $e");
+  List<Course> get filteredClasses {
+    if (searchQuery.value.isEmpty) {
+      return courseList;
+    } else {
+      return courseList.where((course) {
+        return course.nama.toLowerCase().contains(
+          searchQuery.value.toLowerCase(),
+        );
+      }).toList();
     }
   }
 
-  Future<void> updateClass(Map<String, dynamic> updatedClassData) async {
+  void updateTab(int index) {
+    if (currentTabIndex.value != index) {
+      currentTabIndex(index);
+      searchQuery('');
+      fetchCourses(isRefresh: true);
+    }
+  }
+
+  // --- CRUD Functions (Dengan Snackbar Fix) ---
+
+  Future<void> addClass(Map<String, dynamic> data) async {
     try {
-      await updateCourseUseCase(updatedClassData);
-      await fetchCourses(); // Refresh
+      isLoading(true);
+      File? imageFile;
+      if (data['imageFile'] != null) imageFile = data['imageFile'] as File;
+      int hargaInt = int.tryParse(data['harga'].toString()) ?? 0;
+
+      final newCourse = Course(
+        id: '',
+        nama: data['nama'],
+        harga: hargaInt,
+        thumbnail: '',
+        tags: List<String>.from(data['tags']),
+        tagColorsHex: [],
+      );
+
+      await addCourseUseCase(newCourse, imageFile);
+      await fetchCourses(isRefresh: true);
+
+      Get.back(); // Tutup BottomSheet (jika belum tertutup)
+
+      // Tampilkan Snackbar Sukses
+      Get.snackbar(
+        "Berhasil",
+        "Kelas baru berhasil ditambahkan",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM, // Coba di bawah biar jelas
+        margin: const EdgeInsets.all(16),
+      );
     } catch (e) {
-      Get.snackbar("Error", "Gagal update kelas: $e");
+      _showErrorSnackbar(e);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> updateClass(Map<String, dynamic> data) async {
+    try {
+      isLoading(true);
+      File? imageFile;
+      if (data['imageFile'] != null) imageFile = data['imageFile'] as File;
+      int hargaInt = int.tryParse(data['harga'].toString()) ?? 0;
+
+      final updatedCourse = Course(
+        id: data['id'],
+        nama: data['nama'],
+        harga: hargaInt,
+        thumbnail: data['thumbnail'] ?? '',
+        tags: List<String>.from(data['tags']),
+        tagColorsHex: [],
+      );
+
+      await updateCourseUseCase(updatedCourse, imageFile);
+      await fetchCourses(isRefresh: true);
+
+      // FIX SNACKBAR TIDAK MUNCUL
+      Get.snackbar(
+        "Berhasil",
+        "Data kelas berhasil diperbarui",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      _showErrorSnackbar(e);
+    } finally {
+      isLoading(false);
     }
   }
 
   Future<void> deleteClass(String id) async {
     try {
       await deleteCourseUseCase(id);
-      await fetchCourses(); // Refresh
+
+      // Hapus lokal dulu biar cepat responsnya di UI
+      courseList.removeWhere((item) => item.id == id);
+
+      Get.snackbar(
+        "Terhapus",
+        "Kelas berhasil dihapus",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+
+      // Opsional: fetch ulang untuk sinkronisasi total data
+      // fetchCourses(isRefresh: true);
     } catch (e) {
-      Get.snackbar("Error", "Gagal menghapus kelas: $e");
+      _showErrorSnackbar(e);
     }
   }
 
-  // --- FUNGSI DIALOG (Tidak berubah) ---
+  void _showErrorSnackbar(Object e) {
+    String errorMsg = e.toString().replaceAll('Exception:', '').trim();
+    Get.snackbar(
+      "Gagal",
+      errorMsg,
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[900],
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
   void showDeleteConfirmation(BuildContext context, Course course) {
     showDialog(
       context: context,
@@ -142,8 +272,8 @@ class ClassController extends GetxController {
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Ya, Hapus'),
               onPressed: () {
-                deleteClass(course.id); // Panggil fungsi controller
-                Navigator.of(dialogContext).pop();
+                Navigator.of(dialogContext).pop(); // Tutup dialog dulu
+                deleteClass(course.id); // Baru eksekusi hapus
               },
             ),
           ],

@@ -1,17 +1,15 @@
-// lib/app/presentation/pages/account_page.dart
-
+import 'dart:io'; // WAJIB ADA untuk File
 import 'package:flutter/material.dart';
-//? --- PERBAIKAN: Hapus go_router, import Get ---
-// import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 
-//? --- PERBAIKAN: Import AuthController ---
 import '../controllers/auth_controller.dart';
+import '../controllers/class_controller.dart';
+import 'course/class_page.dart';
 import '../widgets/input_field.dart';
 import '../widgets/dropdown_field.dart';
 
-// Warna yang sering dipakai di layout
 const Color lsGreen = Color(0xFF0DA680);
 
 class AccountPage extends StatefulWidget {
@@ -22,14 +20,18 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
+  final AuthController authC = Get.find<AuthController>();
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+
+  File? _selectedImageFile;
+  final ImagePicker _picker = ImagePicker();
 
   String _dateOfBirth = 'Masukkan tanggal lahirmu';
   String _gender = 'Pilih laki-laki atau perempuan';
   String _jobStatus = 'Pilih status pekerjaanmu';
 
-  // Daftar opsi HARUS menyertakan placeholder sebagai item pertama
   final List<String> genderOptions = [
     'Pilih laki-laki atau perempuan',
     'Laki-laki',
@@ -49,52 +51,82 @@ class _AccountPageState extends State<AccountPage> {
     _loadProfileData();
   }
 
-  //* Fungsi untuk memuat data dari SharedPreferences (Tidak berubah)
   void _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
+    final user = authC.user;
+    if (user == null) return;
+    final uid = user.uid;
+
     setState(() {
-      nameController.text = prefs.getString('profile_name') ?? 'Ahmad Sahroni';
-      addressController.text = prefs.getString('profile_address') ?? '';
+      nameController.text = user.displayName ?? '';
+      addressController.text = prefs.getString('profile_address_$uid') ?? '';
       _dateOfBirth =
-          prefs.getString('profile_dob') ?? 'Masukkan tanggal lahirmu';
-      _gender = prefs.getString('profile_gender') ?? genderOptions[0];
-      _jobStatus = prefs.getString('profile_job') ?? jobOptions[0];
+          prefs.getString('profile_dob_$uid') ?? 'Masukkan tanggal lahirmu';
+
+      String savedGender =
+          prefs.getString('profile_gender_$uid') ?? genderOptions[0];
+      _gender = genderOptions.contains(savedGender)
+          ? savedGender
+          : genderOptions[0];
+
+      String savedJob = prefs.getString('profile_job_$uid') ?? jobOptions[0];
+      _jobStatus = jobOptions.contains(savedJob) ? savedJob : jobOptions[0];
+
+      // --- PERBAIKAN: LOAD FOTO KE STATE LOKAL ---
+      // Ambil path foto dari SharedPreferences
+      String? savedPhotoPath = prefs.getString('profile_photo_path_$uid');
+
+      // Cek apakah path ada DAN filenya masih ada di HP
+      if (savedPhotoPath != null && savedPhotoPath.isNotEmpty) {
+        File fileCek = File(savedPhotoPath);
+        if (fileCek.existsSync()) {
+          _selectedImageFile = fileCek; // <--- Set ke variabel tampilan
+
+          // PENTING: Sinkronkan juga ke AuthController biar Homepage tahu
+          authC.localPhotoPath.value = savedPhotoPath;
+        }
+      }
     });
   }
 
-  //* Fungsi untuk menyimpan perubahan data (Tidak berubah)
-  void _saveProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_name', nameController.text);
-    await prefs.setString('profile_address', addressController.text);
-    await prefs.setString('profile_dob', _dateOfBirth);
-    await prefs.setString('profile_gender', _gender);
-    await prefs.setString('profile_job', _jobStatus);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Perubahan profil berhasil disimpan!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.grey[800],
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).size.height - 200,
-            right: 40,
-            left: 40,
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          duration: const Duration(seconds: 3),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+  // --- FUNGSI AMBIL FOTO ---
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
       );
+
+      if (pickedFile != null) {
+        // 1. Simpan ke Controller & Memori HP
+        await authC.updateLocalPhoto(pickedFile.path);
+
+        // 2. Update Tampilan Halaman Ini
+        setState(() {
+          _selectedImageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      print("Error ambil foto: $e");
     }
   }
 
-  //* Fungsi untuk menampilkan kalender (Date Picker) (Tidak berubah)
+  void _saveProfileData() async {
+    final user = authC.user;
+    if (user == null) return;
+    final uid = user.uid;
+
+    if (nameController.text.isNotEmpty) {
+      await authC.updateDisplayName(nameController.text);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_address_$uid', addressController.text);
+    await prefs.setString('profile_dob_$uid', _dateOfBirth);
+    await prefs.setString('profile_gender_$uid', _gender);
+    await prefs.setString('profile_job_$uid', _jobStatus);
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -102,19 +134,14 @@ class _AccountPageState extends State<AccountPage> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked.toString().split(' ')[0] != _dateOfBirth) {
+    if (picked != null) {
       setState(() {
-        _dateOfBirth = picked.toString().split(' ')[0];
+        _dateOfBirth = "${picked.day}-${picked.month}-${picked.year}";
       });
     }
   }
 
-  //* Fungsi untuk menampilkan dialog konfirmasi logout
   Future<void> _showLogoutConfirmationDialog() async {
-    //? --- PERBAIKAN: Dapatkan AuthController di sini ---
-    //?    (Karena kita membutuhkannya di dalam dialog)
-    final authC = Get.find<AuthController>();
-
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -133,12 +160,9 @@ class _AccountPageState extends State<AccountPage> {
             TextButton(
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Ya, Keluar'),
-              //? --- PERBAIKAN: Ganti context.go ke authC.logout() ---
               onPressed: () {
+                Navigator.of(dialogContext).pop();
                 authC.logout();
-                Navigator.of(dialogContext).pop(); // Tutup dialog
-                // Navigasi ke /login akan di-handle oleh
-                // StreamBuilder di SplashPage
               },
             ),
           ],
@@ -149,10 +173,18 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    //? --- PERBAIKAN: Dapatkan AuthController di build method ---
-    //?    Kita mungkin tidak membutuhkannya di sini, tapi ini
-    //?    pola yang baik jika Anda ingin menampilkan info user, dll.
-    // final authC = Get.find<AuthController>();
+    if (!Get.isRegistered<ClassController>()) {
+      try {
+        Get.put(
+          ClassController(
+            getAllCoursesUseCase: Get.find(),
+            addCourseUseCase: Get.find(),
+            updateCourseUseCase: Get.find(),
+            deleteCourseUseCase: Get.find(),
+          ),
+        );
+      } catch (e) {}
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -162,44 +194,64 @@ class _AccountPageState extends State<AccountPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... (UI Header Profil tidak berubah) ...
               const SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage("assets/images/avatar.jpg"),
-                    radius: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Semangat Belajarnya.",
-                        style: TextStyle(fontSize: 16, color: Colors.black),
-                      ),
-                      Text(
-                        nameController.text.isNotEmpty
-                            ? nameController.text
-                            : "Pengguna",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
 
-              // ... (UI Button "Buka Navigasi" tidak berubah) ...
+              // HEADER PROFIL
+              Obx(() {
+                final user = authC.user;
+                final localPath =
+                    authC.localPhotoPath.value; // Dengar perubahan
+
+                ImageProvider bgImage;
+                if (_selectedImageFile != null) {
+                  bgImage = FileImage(_selectedImageFile!);
+                } else if (localPath != null && File(localPath).existsSync()) {
+                  bgImage = FileImage(File(localPath));
+                } else if (user?.photoURL != null) {
+                  bgImage = NetworkImage(user!.photoURL!);
+                } else {
+                  bgImage = const AssetImage("assets/images/avatar.jpg");
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: bgImage,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Semangat Belajarnya,",
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          Text(
+                            user?.displayName ?? nameController.text,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }),
+
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black87,
                     side: const BorderSide(color: Colors.grey),
@@ -207,48 +259,69 @@ class _AccountPageState extends State<AccountPage> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () => Get.to(() => const ClassPage()),
                   icon: const Icon(
                     Icons.dashboard_customize_outlined,
                     size: 20,
                   ),
-                  label: const Text("Buka Navigasi Menu"),
+                  label: const Text("Kelola & Telusuri Kelas"),
                 ),
               ),
               const SizedBox(height: 30),
 
-              // ... (UI Edit Profil Foto tidak berubah) ...
               const Text(
                 "Edit Profil",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 15),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Stack(
-                    children: [
-                      const CircleAvatar(
-                        backgroundImage: AssetImage("assets/images/avatar.jpg"),
-                        radius: 45,
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 16,
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      children: [
+                        Obx(() {
+                          // Logic yang sama untuk Avatar besar di Edit
+                          final user = authC.user;
+                          final localPath = authC.localPhotoPath.value;
+                          ImageProvider bgImage;
+                          if (_selectedImageFile != null) {
+                            bgImage = FileImage(_selectedImageFile!);
+                          } else if (localPath != null &&
+                              File(localPath).existsSync()) {
+                            bgImage = FileImage(File(localPath));
+                          } else if (user?.photoURL != null) {
+                            bgImage = NetworkImage(user!.photoURL!);
+                          } else {
+                            bgImage = const AssetImage(
+                              "assets/images/avatar.jpg",
+                            );
+                          }
+                          return CircleAvatar(
+                            backgroundImage: bgImage,
+                            radius: 45,
+                          );
+                        }),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
@@ -263,7 +336,7 @@ class _AccountPageState extends State<AccountPage> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: _pickImage,
                             icon: const Icon(
                               Icons.file_upload_outlined,
                               size: 20,
@@ -284,8 +357,6 @@ class _AccountPageState extends State<AccountPage> {
                 ],
               ),
               const SizedBox(height: 40),
-
-              // ... (UI Form Informasi Kontak tidak berubah) ...
               const Text(
                 "Informasi Kontak",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -296,7 +367,7 @@ class _AccountPageState extends State<AccountPage> {
                 labelSize: 16,
                 labelWeight: FontWeight.w500,
                 controller: nameController,
-                hint: "Ahmad Sahroni",
+                hint: "Nama Anda",
               ),
               const SizedBox(height: 20),
               GestureDetector(
@@ -344,8 +415,6 @@ class _AccountPageState extends State<AccountPage> {
                 maxLines: 4,
               ),
               const SizedBox(height: 30),
-
-              // ... (UI Tombol "Simpan Perubahan" tidak berubah) ...
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -362,8 +431,6 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
               const SizedBox(height: 15),
-
-              // ... (UI Tombol "Logout" tidak berubah, tapi fungsinya sudah di-update) ...
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(

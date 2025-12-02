@@ -14,52 +14,65 @@ class TodoFirestoreDataSource {
     return _db.collection('users').doc(userId).collection('todos');
   }
 
-  // Ubah parameter 'startAfter' agar menerima objek 'Todo', bukan DocumentSnapshot
   Future<List<Todo>> fetchTodos({int limit = 20, Todo? startAfter}) async {
     try {
-      //? 1. Query Dasar: Urutkan berdasarkan documentId (default sort yang stabil)
-      //    Atau gunakan 'createdAt' jika menyimpan field tersebut.
+      // PERBAIKAN: Gunakan FieldPath.documentId untuk sorting yang stabil
+      // Jangan sort by 'scheduledTime' di sini karena data lama akan hilang/null.
       var query = _getTodoCollection()
-          .orderBy(
-            FieldPath.documentId,
-          ) // mengurutkan data berdasarkan documentId
-          .limit(limit); // batasi jumlah data yang diambil sesuai limit (20)
+          .orderBy(FieldPath.documentId)
+          .limit(limit);
 
-      //? 2. Logika Pagination (Object-Based Cursor)
       if (startAfter != null && startAfter.id != null) {
-        // Trik: Kita ambil DocumentSnapshot dari ID Todo tersebut
         final lastDocSnapshot = await _getTodoCollection()
             .doc(startAfter.id)
-            .get(); // untuk mendapatkan snapshot (dokumen asli dari Firestore)
-
-        // Jika dokumen ditemukan, gunakan sebagai titik mulai (Cursor)
+            .get();
         if (lastDocSnapshot.exists) {
-          query = query.startAfterDocument(
-            lastDocSnapshot,
-          ); // ambil 20 data lagi, dimulai SETELAH dokumen yang diambil sebelumnya.
+          query = query.startAfterDocument(lastDocSnapshot);
         }
       }
 
-      //? eksekusi query, firestore mengambil data
       final snapshot = await query.get();
-
-      //? Firestore tidak menyimpan field id di dalam JSON, jadi harus kita tambahkan sendiri
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
-        return Todo.fromJson(data); // dikonversi ke object Todo
+        return Todo.fromJson(data);
       }).toList();
     } catch (e) {
       throw Exception('Gagal memuat data: $e');
     }
   }
 
-  // ... (Fungsi create, update, delete tetap sama) ...
-  Future<Todo> createTodo(String text) async {
+  // --- FUNGSI BARU: SEARCH ALL ---
+  // Mengambil semua data user untuk difilter secara lokal
+  Future<List<Todo>> searchTodos(String query) async {
     try {
-      final newTodo = Todo(text: text, completed: false);
-      final docRef = await _getTodoCollection().add(newTodo.toJson());
-      return newTodo.copyWith(id: docRef.id);
+      // Kita ambil semua data (tanpa limit)
+      // Urutkan berdasarkan waktu agar hasil search rapi
+      // Catatan: Jika data user > 1000, ini mungkin agak berat, tapi untuk Todo App ini aman.
+      final snapshot = await _getTodoCollection()
+          .orderBy(FieldPath.documentId)
+          .get();
+
+      final allData = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Todo.fromJson(data);
+      }).toList();
+
+      // Filter di sisi Dart (Case Insensitive & Partial Match)
+      // Ini jauh lebih powerful daripada query Firestore
+      return allData.where((todo) {
+        return todo.text.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    } catch (e) {
+      throw Exception('Gagal mencari data: $e');
+    }
+  }
+
+  // Pastikan fungsi add/update/delete tidak dihapus
+  Future<void> addTodo(Todo todo) async {
+    try {
+      await _getTodoCollection().add(todo.toJson());
     } catch (e) {
       throw Exception('Gagal membuat todo: $e');
     }

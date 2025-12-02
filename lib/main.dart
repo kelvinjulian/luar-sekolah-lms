@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/core/routes/app_routes.dart';
 // Import NotificationService yang baru dibuat
@@ -24,6 +25,9 @@ void main() async {
   // 2. Inisialisasi Firebase
   // Menghubungkan aplikasi ke proyek Firebase menggunakan config yang ada di firebase_options.dart
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Inisialisasi Data Format Tanggal Lokal (Indonesia)
+  await initializeDateFormatting('id_ID', null); // TAMBAHAN PENTING 2
 
   //? --- INISIALISASI SERVICES (FITUR BARU MINGGU 10) ---
   // Langkah A: Dependency Injection Service
