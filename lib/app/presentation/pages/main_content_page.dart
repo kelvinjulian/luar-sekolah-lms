@@ -1,16 +1,16 @@
+import 'dart:io'; // WAJIB ADA untuk File
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 
-// Asumsi path ini benar, ini untuk widget-widget kartu custom
 import '../widgets/custom_cards.dart';
+import '../controllers/auth_controller.dart';
 
-// =========================
-// DEFINISI WARNA & DATA STATIS (dipindahkan ke sini karena hanya dipakai di halaman ini)
-// =========================
-const Color lsGreen = Color(0xFF0DA680); // Warna hijau utama app
-const Color backgroundLight = Color(0xFFFAFAFA); // Warna background putih muda
-const Color tagBlue = Color.fromARGB(255, 37, 146, 247); // Warna biru untuk tag
-const Color tagGreen = Color(0xFF0DA680); // Warna hijau lagi untuk tag
+// WARNA & DATA STATIS
+const Color lsGreen = Color(0xFF0DA680);
+const Color backgroundLight = Color(0xFFFAFAFA);
+const Color tagBlue = Color.fromARGB(255, 37, 146, 247);
+const Color tagGreen = Color(0xFF0DA680);
 
 const List<String> promoBanners = [
   "assets/images/banner1.png",
@@ -18,10 +18,6 @@ const List<String> promoBanners = [
   "assets/images/banner1.png",
 ];
 
-// =================================================================
-// WIDGET KONTEN UTAMA HALAMAN BERANDA
-// - Widget ini hanya berisi konten 'Beranda', tanpa Scaffold atau BottomNavBar.
-// =================================================================
 class MainContentPage extends StatefulWidget {
   const MainContentPage({super.key});
 
@@ -30,13 +26,12 @@ class MainContentPage extends StatefulWidget {
 }
 
 class _MainContentPageState extends State<MainContentPage> {
-  // State untuk melacak banner carousel yang sedang aktif
   int _currentPage = 0;
   final PageController _pageController = PageController(initialPage: 0);
+  final AuthController authC = Get.find<AuthController>();
 
   @override
   void dispose() {
-    // Penting! Harus dibersihkan biar nggak error saat widget hilang
     _pageController.dispose();
     super.dispose();
   }
@@ -45,35 +40,58 @@ class _MainContentPageState extends State<MainContentPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // ----------------------------
-        // HEADER: Avatar + Greeting + Bell Icon
-        // ----------------------------
+        // HEADER
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.only(
+            top: 60,
+            left: 24,
+            right: 24,
+            bottom: 24,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage("assets/images/avatar.jpg"),
-                    radius: 24,
-                  ),
+                  // AVATAR SINKRON
+                  Obx(() {
+                    final user = authC.user;
+                    final localPath = authC.localPhotoPath.value;
+
+                    ImageProvider bgImage;
+                    // Cek apakah ada foto lokal yang tersimpan
+                    if (localPath != null && File(localPath).existsSync()) {
+                      bgImage = FileImage(File(localPath));
+                    } else if (user?.photoURL != null) {
+                      bgImage = NetworkImage(user!.photoURL!);
+                    } else {
+                      bgImage = const AssetImage("assets/images/avatar.jpg");
+                    }
+
+                    return CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundImage: bgImage,
+                    );
+                  }),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         "Halo,",
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        "Ahmad Sahroni 👋",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      const SizedBox(height: 2),
+                      Obx(
+                        () => Text(
+                          "${authC.user?.displayName ?? "Pengguna"} 👋",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -91,9 +109,7 @@ class _MainContentPageState extends State<MainContentPage> {
           ),
         ),
 
-        // ----------------------------
-        //* KONTEN UTAMA (Body dengan background putih)
-        // ----------------------------
+        // KONTEN UTAMA
         Expanded(
           child: Container(
             decoration: const BoxDecoration(
@@ -106,9 +122,6 @@ class _MainContentPageState extends State<MainContentPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               children: [
-                // ========================
-                //* CAROUSEL BANNER
-                // ========================
                 CarouselBanner(
                   pageController: _pageController,
                   banners: promoBanners,
@@ -121,9 +134,6 @@ class _MainContentPageState extends State<MainContentPage> {
                 ),
                 const SizedBox(height: 34),
 
-                // ========================
-                //* PROGRAM DARI LUARSEKOLAH
-                // ========================
                 const Text(
                   "Program dari Luarsekolah",
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -172,9 +182,6 @@ class _MainContentPageState extends State<MainContentPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // ========================
-                //* REDEEM VOUCHER
-                // ========================
                 RedeemVoucherCard(
                   logo: Padding(
                     padding: const EdgeInsets.only(top: 4.0),
@@ -187,9 +194,6 @@ class _MainContentPageState extends State<MainContentPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // ========================
-                //* KELAS TERPOPULER
-                // ========================
                 const Text(
                   "Kelas Terpopuler di Prakerja",
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -234,9 +238,6 @@ class _MainContentPageState extends State<MainContentPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // ========================
-                //* SUBSCRIPTION CARD
-                // ========================
                 const Text(
                   "Akses Semua Kelas dengan Berlangganan",
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
