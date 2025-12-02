@@ -8,14 +8,19 @@ class TodoRepositoryImpl implements ITodoRepository {
   TodoRepositoryImpl(this.dataSource);
 
   @override
-  //? UPDATE: Teruskan parameter pagination ke DataSource
   Future<List<Todo>> getTodos({int limit = 20, Todo? startAfter}) {
     return dataSource.fetchTodos(limit: limit, startAfter: startAfter);
   }
 
   @override
-  Future<Todo> addTodo(String text) {
-    return dataSource.createTodo(text);
+  Future<List<Todo>> searchTodos(String query) {
+    return dataSource.searchTodos(query);
+  }
+
+  @override
+  // PERBAIKAN: Menerima Todo object
+  Future<void> addTodo(Todo todo) {
+    return dataSource.addTodo(todo);
   }
 
   @override

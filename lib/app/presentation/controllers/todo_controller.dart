@@ -1,25 +1,24 @@
 // lib/app/presentation/controllers/todo_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart'; // Opsional jika butuh formatting di controller
 
-// Import Entities & Use Cases
 import '../../domain/entities/todo.dart';
+import '../../domain/usecases/todo/search_todos.dart'; // Import UseCase Baru
 import '../../domain/usecases/todo/add_todo.dart';
 import '../../domain/usecases/todo/delete_todo.dart';
 import '../../domain/usecases/todo/get_all_todos.dart';
 import '../../domain/usecases/todo/update_todo.dart';
-
-// Import Service
 import '../../core/services/notification_service.dart';
 
 enum FilterStatus { all, completed, pending }
 
 class TodoController extends GetxController {
-  // --- DEPENDENCIES ---
   final GetAllTodosUseCase getAllTodosUseCase;
   final AddTodoUseCase addTodoUseCase;
   final UpdateTodoUseCase updateTodoUseCase;
   final DeleteTodoUseCase deleteTodoUseCase;
+  final SearchTodosUseCase searchTodosUseCase; // Inject UseCase Baru
   final NotificationService notificationService;
 
   TodoController({
@@ -27,42 +26,40 @@ class TodoController extends GetxController {
     required this.addTodoUseCase,
     required this.updateTodoUseCase,
     required this.deleteTodoUseCase,
+    required this.searchTodosUseCase, // Tambahkan di constructor
     required this.notificationService,
   });
 
-  // --- STATE UTAMA ---
+  // --- STATE ---
   final allTodos = <Todo>[].obs;
   final isLoading = false.obs;
   final filterStatus = FilterStatus.all.obs;
   final searchQuery = "".obs;
 
-  // --- STATE FEEDBACK UI ---
   final errorMessage = Rxn<String>();
   final successMessage = Rxn<String>();
 
-  // --- PAGINATION STATE ---
+  // Pagination
   final ScrollController scrollController = ScrollController();
-  final isMoreLoading = false.obs; // Loading kecil di bawah list
-
-  // PERBAIKAN: Gunakan Todo? sebagai penanda halaman terakhir (bukan DocumentSnapshot)
-  // Ini agar controller tidak perlu tahu tentang objek Firebase
+  final isMoreLoading = false.obs;
+  final isSearchMode = false.obs;
   Todo? lastTodo;
-
   bool hasMore = true;
   final int pageSize = 20;
 
-  // --- GETTER (COMPUTED) ---
+  // --- GETTER (FILTER & SORTING OTOMATIS) ---
   List<Todo> get filteredTodos {
-    List<Todo> todos = allTodos;
+    // 1. Copy list agar aman
+    List<Todo> todos = List.from(allTodos);
 
-    // 1. Filter Status
+    // 2. Filter Status
     if (filterStatus.value == FilterStatus.completed) {
       todos = todos.where((todo) => todo.completed).toList();
     } else if (filterStatus.value == FilterStatus.pending) {
       todos = todos.where((todo) => !todo.completed).toList();
     }
 
-    // 2. Filter Search
+    // 3. Filter Search
     if (searchQuery.value.isNotEmpty) {
       todos = todos
           .where(
@@ -72,26 +69,54 @@ class TodoController extends GetxController {
           )
           .toList();
     }
+
+    // 4. SORTING: Deadline Terdekat di Atas
+    // Logic: Pending > Completed. Jika Pending, Waktu Terdekat > Waktu Jauh > Tanpa Waktu.
+    todos.sort((a, b) {
+      // Prioritas 1: Status (Pending di atas)
+      if (a.completed != b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      // Prioritas 2: Waktu (Terdekat di atas)
+      if (a.scheduledTime == null && b.scheduledTime == null) return 0;
+      if (a.scheduledTime == null) return 1; // Yg ga punya tanggal taruh bawah
+      if (b.scheduledTime == null) return -1;
+
+      return a.scheduledTime!.compareTo(b.scheduledTime!);
+    });
+
     return todos;
   }
 
-  // --- LIFECYCLE ---
   @override
   void onInit() {
     super.onInit();
-    // Load data awal
     fetchTodos(isRefresh: true);
 
-    // Listener Scroll (Infinite Scroll)
+    // Listener Lazy Load
     scrollController.addListener(() {
-      if (scrollController.position.pixels >=
+      if (!isSearchMode.value && // <-- Cek Mode
+          scrollController.position.pixels >=
               scrollController.position.maxScrollExtent &&
           !isMoreLoading.value &&
           hasMore) {
-        // Jika mentok bawah, sedang tidak mengambil data, masih ada halaman berikutnya, maka fetch data selanjutnya
         fetchTodos();
       }
     });
+
+    // LISTENER SEARCH (DEBOUNCE)
+    // Fungsi ini akan dijalankan 500ms setelah user berhenti mengetik
+    debounce(searchQuery, (String query) {
+      if (query.isEmpty) {
+        // Jika kosong, kembali ke mode Pagination normal
+        isSearchMode.value = false;
+        fetchTodos(isRefresh: true);
+      } else {
+        // Jika ada text, masuk mode Search
+        isSearchMode.value = true;
+        performSearch(query);
+      }
+    }, time: const Duration(milliseconds: 500));
   }
 
   @override
@@ -103,9 +128,7 @@ class TodoController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // Listener untuk memunculkan Snackbar (UI Side Effect)
-
-    // 1. Error Listener
+    // Listener Snackbar Global
     ever(errorMessage, (String? msg) {
       if (msg != null && msg.isNotEmpty && !Get.testMode) {
         Get.snackbar(
@@ -113,11 +136,11 @@ class TodoController extends GetxController {
           msg,
           backgroundColor: Colors.red,
           colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
         );
       }
     });
-
-    // 2. Success Listener
     ever(successMessage, (String? msg) {
       if (msg != null && msg.isNotEmpty && !Get.testMode) {
         Get.snackbar(
@@ -125,62 +148,40 @@ class TodoController extends GetxController {
           msg,
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
         );
       }
     });
   }
 
-  // --- FETCH DATA (PAGINATION) ---
+  // --- FETCH DATA ---
   Future<void> fetchTodos({bool isRefresh = false}) async {
-    // Validasi kondisi
-
-    //? Jika hasMore = false → berarti data di server sudah habis → tidak usah fetch lagi.
-    if (!hasMore && !isRefresh) return; //
-
-    //? Jika sedang loading atau moreLoading → cegah pemanggilan ulang agar tidak double request.
+    if (!hasMore && !isRefresh) return;
     if (isLoading.value || isMoreLoading.value) return;
 
-    // Reset State jika Refresh
     if (isRefresh) {
       isLoading(true);
-      lastTodo = null; // Reset kursor
+      lastTodo = null;
       hasMore = true;
       allTodos.clear();
       errorMessage.value = null;
-    }
-    //? Ini terjadi saat user scroll ke bawah
-    else {
+    } else {
       isMoreLoading(true);
     }
 
     try {
-      // Ini akan membuat spinner berputar selama 2 detik sebelum data diambil
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Panggil UseCase dengan parameter Pagination
+      await Future.delayed(const Duration(seconds: 1)); // Efek loading halus
       final newTodos = await getAllTodosUseCase(
-        limit: pageSize, // Ambil data berdasarkan limit (jumlah per halaman)
-        startAfter: lastTodo, // Kirim objek Todo terakhir sebagai kursor
-        // Bila data datang, tambahkan ke list
+        limit: pageSize,
+        startAfter: lastTodo,
       );
 
-      // Cek apakah data habis
-      //? jika data kurang dari pageSize → artinya halaman terakhir → stop load more
-      if (newTodos.length < pageSize) {
-        hasMore = false;
-      }
+      if (newTodos.length < pageSize) hasMore = false;
+      if (newTodos.isNotEmpty) lastTodo = newTodos.last;
 
-      // Update kursor untuk halaman berikutnya
-      //? jika data ada, simpan lastTodo sebagai kursor halaman berikutnya
-      if (newTodos.isNotEmpty) {
-        lastTodo = newTodos.last;
-      }
-
-      // Masukkan data ke list
       allTodos.addAll(newTodos);
-    }
-    // error handling
-    catch (e) {
+    } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading(false);
@@ -188,189 +189,154 @@ class TodoController extends GetxController {
     }
   }
 
-  // --- ACTIONS ---
-
-  // 1. ADD TODO
-  Future<void> addTodo(String text) async {
+  // --- FUNGSI PENCARIAN BARU ---
+  Future<void> performSearch(String query) async {
+    isLoading(true);
     try {
-      await addTodoUseCase(text);
-      // Refresh list agar data baru muncul di atas dan pagination ter-reset
+      // Panggil UseCase Search (Ambil semua data yang cocok dari server)
+      final results = await searchTodosUseCase(query);
+
+      // Timpa list lokal dengan hasil pencarian
+      allTodos.assignAll(results);
+
+      // Saat mode search, kita tidak butuh pagination
+      hasMore = false;
+    } catch (e) {
+      errorMessage.value = "Gagal mencari: $e";
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  // Update setSearchQuery untuk trigger debounce
+  void setSearchQuery(String query) {
+    searchQuery.value = query; // Ini akan memicu debounce di onInit
+  }
+
+  // --- ACTIONS UTAMA ---
+
+  // 1. ADD TODO (Terima Text & Tanggal)
+  Future<void> addTodo(String text, DateTime? scheduledTime) async {
+    try {
+      // Buat Object Todo lengkap
+      final newTodo = Todo(
+        text: text,
+        completed: false,
+        scheduledTime: scheduledTime,
+      );
+
+      // Panggil UseCase (Pastikan usecase sudah terima parameter Todo)
+      await addTodoUseCase(newTodo);
+
       await fetchTodos(isRefresh: true);
 
       try {
         await notificationService.showLocalNotification(
-          title: "Catatan Baru Ditambahkan",
-          body: "Tugas '$text' berhasil disimpan ke daftar! 📝",
+          title: "Tugas Baru",
+          body: "Berhasil menambahkan: $text",
         );
       } catch (_) {}
     } catch (e) {
-      errorMessage.value = "Gagal menambah: ${e.toString()}";
+      errorMessage.value = "Gagal menambah: $e";
     }
   }
 
   // 2. TOGGLE STATUS
   Future<void> toggleTodoStatus(Todo todo) async {
     try {
-      final bool isNowCompleted = !todo.completed;
-      final updatedTodo = todo.copyWith(completed: isNowCompleted);
-
+      final updatedTodo = todo.copyWith(completed: !todo.completed);
       await updateTodoUseCase(updatedTodo);
 
-      // Update Lokal (Optimistic UI)
+      // Update lokal biar UI langsung berubah (Optimistic UI)
       final index = allTodos.indexWhere((t) => t.id == todo.id);
-      if (index != -1) {
-        allTodos[index] = updatedTodo;
-      }
-
-      String statusMessage = isNowCompleted
-          ? "Selesai dikerjakan! Kerja bagus 🎉"
-          : "Ditandai kembali sebagai belum selesai ⏳";
-
-      try {
-        await notificationService.showLocalNotification(
-          title: "Status Diperbarui",
-          body: "Tugas '${todo.text}' kini $statusMessage",
-        );
-      } catch (_) {}
+      if (index != -1) allTodos[index] = updatedTodo;
     } catch (e) {
-      errorMessage.value = "Gagal update: ${e.toString()}";
+      errorMessage.value = "Gagal update: $e";
     }
   }
 
-  // 3. REMOVE TODO
+  // 3. REMOVE
   Future<void> removeTodo(String id) async {
     try {
-      final todoToDelete = allTodos.firstWhereOrNull((t) => t.id == id);
-      final String todoTitle = todoToDelete?.text ?? "Item";
-
       await deleteTodoUseCase(id);
-
-      // Hapus lokal
       allTodos.removeWhere((t) => t.id == id);
-
-      try {
-        await notificationService.showLocalNotification(
-          title: "Catatan Dihapus",
-          body: "Tugas '$todoTitle' telah dihapus dari daftar 🗑️",
-        );
-      } catch (_) {}
+      successMessage.value = "Tugas berhasil dihapus";
     } catch (e) {
-      errorMessage.value = "Gagal menghapus: ${e.toString()}";
+      errorMessage.value = "Gagal hapus: $e";
     }
   }
 
-  // 4. UPDATE TODO TEXT
+  // 4. UPDATE TEXT
   Future<void> updateTodoText(Todo oldTodo, String newText) async {
     if (oldTodo.text == newText) return;
     try {
       final updatedTodo = oldTodo.copyWith(text: newText);
       await updateTodoUseCase(updatedTodo);
-
-      // Refresh list untuk memastikan konsistensi data
       await fetchTodos(isRefresh: true);
-
-      // Opsional: Notifikasi
-      try {
-        await notificationService.showLocalNotification(
-          title: "Catatan Diubah",
-          body: "Tugas berhasil diubah menjadi '$newText'",
-        );
-      } catch (_) {}
     } catch (e) {
-      errorMessage.value = "Gagal update teks: ${e.toString()}";
+      errorMessage.value = "Gagal update teks: $e";
     }
   }
 
-  // 5. SCHEDULE REMINDER
-  Future<void> scheduleTodoReminder(Todo todo) async {
+  // --- TAMBAHKAN FUNGSI INI DI DALAM CLASS TodoController ---
+
+  // Update Todo Lengkap (Teks, Status, Waktu)
+  Future<void> updateTodo(Todo todo) async {
     try {
-      final scheduledTime = DateTime.now().add(const Duration(seconds: 5));
+      // 1. Panggil UseCase (yang kamu kirim di chat)
+      await updateTodoUseCase(todo);
+
+      // 2. Refresh list agar data terbaru muncul
+      await fetchTodos(isRefresh: true);
+
+      // 3. Update Notifikasi jika ada waktu baru
+      if (todo.scheduledTime != null) {
+        // Pastikan waktu di masa depan sebelum pasang alarm
+        if (todo.scheduledTime!.isAfter(DateTime.now())) {
+          scheduleReminder(todo, todo.scheduledTime!);
+        }
+      }
+
+      successMessage.value = "Tugas berhasil diperbarui";
+    } catch (e) {
+      errorMessage.value = "Gagal update: $e";
+    }
+  }
+
+  // 5. SCHEDULE REMINDER (Alarm)
+  Future<void> scheduleReminder(Todo todo, DateTime scheduledTime) async {
+    try {
+      if (scheduledTime.isBefore(DateTime.now())) {
+        errorMessage.value = "Waktu pengingat harus di masa depan!";
+        return;
+      }
+
+      int notificationId = todo.text.hashCode; // Generate ID unik dari text
 
       await notificationService.scheduleNotification(
-        id: DateTime.now().millisecond,
-        title: "⏰ Pengingat Tugas",
-        body: "Jangan lupa kerjakan: '${todo.text}'!",
+        id: notificationId,
+        title: "🔔 Pengingat Tugas",
+        body: "Waktunya mengerjakan: '${todo.text}'",
         scheduledDate: scheduledTime,
       );
 
-      // Trigger Snackbar Sukses lewat variabel state
-      successMessage.value = "Tunggu 5 detik...";
-    } catch (e) {
-      errorMessage.value = "Gagal jadwal: $e";
-    }
-  }
-
-  //! --- DEBUGGING / TESTING ONLY ---
-  // Inject 50 Dummy Data
-  Future<void> injectDummyData() async {
-    // Pastikan tidak double request
-    if (isLoading.value) return;
-
-    isLoading(true);
-    successMessage.value = "Sedang generate 50 data...";
-
-    try {
-      // Loop 50 kali
-      for (int i = 1; i <= 50; i++) {
-        await addTodoUseCase("Dummy Task #$i - Generated");
-        // Opsional: Kasih delay dikit biar tidak kena rate limit Firestore (kalau koneksi lambat)
-        // await Future.delayed(const Duration(milliseconds: 50));
-        //  TAMBAHKAN DELAY DI SINI (Misal 100ms per item)
-        // Ini biar tidak terlalu ngebut, jadi terasa prosesnya
-        await Future.delayed(const Duration(milliseconds: 50));
+      // Feedback Text
+      final diff = scheduledTime.difference(DateTime.now());
+      String msg = "";
+      if (diff.inMinutes < 60) {
+        msg = "Pengingat diset ${diff.inMinutes} menit lagi";
+      } else {
+        msg =
+            "Pengingat diset jam ${DateFormat('HH:mm').format(scheduledTime)}";
       }
-
-      // Refresh list setelah semua selesai
-      await fetchTodos(isRefresh: true);
-
-      successMessage.value = "Berhasil inject 50 data!";
+      successMessage.value = msg;
     } catch (e) {
-      errorMessage.value = "Gagal inject: $e";
-    } finally {
-      isLoading(false);
+      errorMessage.value = "Gagal pasang alarm: $e";
     }
   }
 
-  //! --- DEBUG: HAPUS SEMUA DATA ---
-  Future<void> deleteAllTodos() async {
-    if (isLoading.value) return;
-
-    // Cek jika list kosong
-    if (allTodos.isEmpty) {
-      errorMessage.value = "List sudah kosong!";
-      return;
-    }
-
-    isLoading(true);
-    successMessage.value = "Sedang menghapus semua data...";
-
-    try {
-      // 1. Ambil semua ID dari data yang sedang dimuat
-      // Kita butuh copy list ID karena allTodos akan berubah
-      final idsToDelete = allTodos
-          .map((todo) => todo.id)
-          .whereType<String>()
-          .toList();
-
-      // 2. Loop dan hapus satu per satu
-      for (final id in idsToDelete) {
-        await deleteTodoUseCase(id);
-      }
-
-      // 3. Bersihkan state lokal & reset pagination
-      allTodos.clear();
-      lastTodo = null;
-      hasMore = true; // Reset agar fetch selanjutnya mulai dari awal
-
-      successMessage.value = "Semua data berhasil dihapus!";
-    } catch (e) {
-      errorMessage.value = "Gagal menghapus sebagian data: $e";
-    } finally {
-      isLoading(false);
-    }
-  }
-
-  // --- UI FILTERS ---
+  // Helpers
   void setFilter(FilterStatus status) => filterStatus(status);
-  void setSearchQuery(String query) => searchQuery(query);
+  Future<void> deleteAllTodos() async {} // Implementasi jika perlu
+  Future<void> injectDummyData() async {} // Implementasi jika perlu
 }

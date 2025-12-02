@@ -1,8 +1,6 @@
-// lib/app/domain/usecases/todo/add_todo.dart
 import '../../repositories/i_todo_repository.dart';
 import '../../entities/todo.dart';
 
-// Buat Exception custom jika belum ada
 class ValidationException implements Exception {
   final String message;
   ValidationException(this.message);
@@ -13,24 +11,23 @@ class AddTodoUseCase {
 
   AddTodoUseCase(this.repository);
 
-  Future<Todo> call(String text) async {
-    // 1. TRIM: Hapus spasi depan/belakang
-    final cleanText = text.trim();
+  // PERBAIKAN: Parameter ganti jadi Todo
+  Future<void> call(Todo todo) async {
+    // 1. Validasi Teks di dalam object Todo
+    final cleanText = todo.text.trim();
 
-    // // KODE SABOTASE (SALAH)
-    // final cleanText = text; // <-- Lupa di-trim!
-
-    // 2. VALIDASI: Cek kosong
     if (cleanText.isEmpty) {
       throw ValidationException("Teks Todo tidak boleh kosong");
     }
 
-    // 3. VALIDASI: Cek panjang karakter (misal max 100)
     if (cleanText.length > 100) {
       throw ValidationException("Teks Todo terlalu panjang (max 100 karakter)");
     }
 
-    // 4. Panggil Repository dengan data bersih
-    return await repository.addTodo(cleanText);
+    // 2. Buat object bersih (trim text)
+    final cleanTodo = todo.copyWith(text: cleanText);
+
+    // 3. Kirim ke Repo
+    return await repository.addTodo(cleanTodo);
   }
 }
