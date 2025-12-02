@@ -1,4 +1,4 @@
-# 🎓 Luar Sekolah LMS - Mobile App
+# 🎓 Luar Sekolah LMS - Mobile Application
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue?logo=flutter)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-orange?logo=firebase)
@@ -7,62 +7,62 @@
 ![Architecture](https://img.shields.io/badge/Architecture-Clean%20Code-lightgrey)
 ![Testing](https://img.shields.io/badge/Testing-Unit%20%26%20Widget-red)
 
-**Luar Sekolah LMS** adalah aplikasi mobile manajemen pembelajaran dan produktivitas yang dikembangkan sebagai **Final Project Internship**. Aplikasi ini menerapkan arsitektur _Hybrid Backend_ (REST API & Firebase) dengan standar _Clean Architecture_ untuk memastikan skalabilitas, performa, dan kemudahan pemeliharaan.
+**Luar Sekolah LMS** is a mobile learning management and productivity application developed as a **Final Internship Project**. This application implements a _Hybrid Backend_ architecture (REST API & Firebase) with _Clean Architecture_ standards to ensure scalability, performance, and maintainability.
 
 ---
 
-## 🌟 Fitur Utama (Highlight Features)
+## 🌟 Key Features
 
-Aplikasi ini dibangun secara bertahap selama 12 minggu pengembangan. Berikut adalah fitur lengkapnya:
+This application was built incrementally over 12 weeks of development. Below are the complete features:
 
-### 1. 🔐 Autentikasi & Keamanan (Advanced Auth)
+### 1. 🔐 Authentication & Security (Advanced Auth)
 
-Fitur keamanan lengkap menggunakan integrasi **Firebase Auth** dan validasi kustom.
+Comprehensive security features using **Firebase Auth** integration and custom validation.
 
-- **Slider Captcha (Puzzle):** Verifikasi keamanan anti-bot interaktif pada halaman registrasi.
-- **Form Validation:** Validasi input real-time (Email regex, Password strength, Phone format +62).
-- **Realtime Profile Sync:** Sinkronisasi foto profil dan nama pengguna secara instan antara Halaman Akun dan Beranda menggunakan _Local Caching_.
-- **Auto-Redirect:** Navigasi otomatis berbasis status login pengguna.
+- **Slider Captcha (Puzzle):** Interactive anti-bot security verification on registration page.
+- **Form Validation:** Real-time input validation (Email regex, Password strength, Phone format +62).
+- **Realtime Profile Sync:** Instant synchronization of profile photos and usernames between Account and Home pages using _Local Caching_.
+- **Auto-Redirect:** Automatic navigation based on user login status.
 
-### 2. 📚 Manajemen Kelas (Core Business - REST API)
+### 2. 📚 Course Management (Core Business - REST API)
 
-Migrasi total dari Firebase ke **REST API Perusahaan** untuk manajemen data bisnis utama.
+Complete migration from Firebase to **Company REST API** for core business data management.
 
-- **Hybrid Backend:** Menggunakan REST API untuk data kursus, mengurangi ketergantungan pada kuota Firebase.
-- **CRUD Operations:** Mendukung Create, Read, Update (dengan metode `PUT`), dan Delete kelas.
-- **File Upload:** Upload gambar thumbnail kelas menggunakan `Multipart Request`.
-- **Server-Side Logic:** Implementasi **Lazy Loading (Pagination)** dan **Filtering (Tags)** langsung di sisi server untuk efisiensi data.
-- **Fixed Header UI:** Desain antarmuka modern dengan header statis dan konten yang dapat digulir.
+- **Hybrid Backend:** Uses REST API for course data, reducing dependency on Firebase quota.
+- **CRUD Operations:** Supports Create, Read, Update (with `PUT` method), and Delete courses.
+- **File Upload:** Upload course thumbnail images using `Multipart Request`.
+- **Server-Side Logic:** Implementation of **Lazy Loading (Pagination)** and **Filtering (Tags)** directly on server-side for data efficiency.
+- **Fixed Header UI:** Modern interface design with static header and scrollable content.
 
-### 3. ✅ Produktivitas & Todo List
+### 3. ✅ Productivity & Todo List
 
-Modul manajemen tugas yang terintegrasi dengan **Firebase Firestore**.
+Task management module integrated with **Firebase Firestore**.
 
-- **Scheduled Deadlines:** Menetapkan tanggal dan jam tenggat waktu tugas.
-- **Smart Sorting:** Algoritma pengurutan otomatis (Tugas belum selesai dengan deadline terdekat selalu di atas).
-- **Visual Status:** Indikator warna kartu (🔴 Terlewat, 🟠 < 24 Jam, 🔵 Normal, 🟢 Selesai).
-- **Local Alarm:** Integrasi notifikasi lokal untuk pengingat tugas.
+- **Scheduled Deadlines:** Set task deadlines with date and time.
+- **Smart Sorting:** Automatic sorting algorithm (Incomplete tasks with nearest deadlines always on top).
+- **Visual Status:** Card color indicators (🔴 Overdue, 🟠 < 24 Hours, 🔵 Normal, 🟢 Completed).
+- **Local Alarm:** Local notification integration for task reminders.
 
-### 4. 🛠️ Arsitektur & Kualitas Kode
+### 4. 🛠️ Architecture & Code Quality
 
-- **Clean Architecture:** Pemisahan kode menjadi layer _Domain_, _Data_, dan _Presentation_.
-- **GetX State Management:** Manajemen state yang reaktif dan efisien.
-- **Comprehensive Testing:** Cakupan Unit Test (UseCase, Repository, Controller) dan Widget Test menggunakan `mocktail`.
+- **Clean Architecture:** Code separation into _Domain_, _Data_, and _Presentation_ layers.
+- **GetX State Management:** Reactive and efficient state management.
+- **Comprehensive Testing:** Coverage of Unit Tests (UseCase, Repository, Controller) and Widget Tests using `mocktail`.
 
 ---
 
-## 🗺️ Perjalanan Pengembangan (Development Roadmap)
+## 🗺️ Development Roadmap
 
-Aplikasi ini dikembangkan melalui serangkaian _milestone_ mingguan:
+This application was developed through a series of weekly _milestones_:
 
-- **Week 02-03:** Inisiasi UI, Widget Layout, dan Bottom Navigation.
-- **Week 04:** Implementasi Form Validation yang ketat.
-- **Week 05:** Routing manajemen & Page Transitions.
-- **Week 07-08:** Refactoring ke **Clean Architecture** & Implementasi GetX.
-- **Week 09:** Integrasi Firebase Auth & Firestore (Awal).
-- **Week 10:** Implementasi Push Notification (Local Notifications).
-- **Week 11:** Implementasi **Unit & Widget Testing** suite.
-- **Week 12 (Final):** Migrasi Hybrid (API), Advanced Todo, Captcha, & Dashboarding.
+- **Week 02-03:** UI initialization, Widget Layout, and Bottom Navigation.
+- **Week 04:** Implementation of strict Form Validation.
+- **Week 05:** Route management & Page Transitions.
+- **Week 07-08:** Refactoring to **Clean Architecture** & GetX Implementation.
+- **Week 09:** Firebase Auth & Firestore Integration (Initial).
+- **Week 10:** Push Notification Implementation (Local Notifications).
+- **Week 11:** Implementation of **Unit & Widget Testing** suite.
+- **Week 12 (Final):** Hybrid Migration (API), Advanced Todo, Captcha, & Dashboarding.
 
 ---
 
@@ -72,42 +72,42 @@ Aplikasi ini dikembangkan melalui serangkaian _milestone_ mingguan:
 - **Language:** Dart
 - **State Management:** GetX
 - **Backend:**
-  - **REST API (Zoidify):** Manajemen Kelas & Upload File.
-  - **Firebase Firestore:** Database Todo List & User Data.
-  - **Firebase Auth:** Manajemen User Authentication.
+  - **REST API (Zoidify):** Course Management & File Upload.
+  - **Firebase Firestore:** Todo List & User Data Database.
+  - **Firebase Auth:** User Authentication Management.
 - **Key Packages:**
-  - `http`: Komunikasi REST API.
-  - `slider_captcha`: Keamanan UI interaktif.
-  - `flutter_local_notifications`: Sistem notifikasi & alarm.
-  - `intl`: Format tanggal dan mata uang (Rupiah).
-  - `image_picker`: Akses galeri dan kamera.
-  - `shared_preferences`: Caching data lokal ringan.
-  - `mocktail` & `flutter_test`: Pengujian aplikasi.
+  - `http`: REST API communication.
+  - `slider_captcha`: Interactive UI security.
+  - `flutter_local_notifications`: Notification & alarm system.
+  - `intl`: Date and currency formatting (Rupiah).
+  - `image_picker`: Gallery and camera access.
+  - `shared_preferences`: Lightweight local data caching.
+  - `mocktail` & `flutter_test`: Application testing.
 
 ---
 
-## 📂 Struktur Folder (Clean Architecture)
+## 📂 Folder Structure (Clean Architecture)
 
 ```text
 lib/app/
-├── data/                  # Layer Data (Implementasi Teknis)
+├── data/                  # Data Layer (Technical Implementation)
 │   ├── datasources/       # Remote (API) & Firestore Sources
-│   ├── models/            # Model Data (JSON Parsing)
-│   └── repositories/      # Implementasi Repository
-├── domain/                # Layer Domain (Business Logic Murni)
-│   ├── entities/          # Objek Bisnis Utama
-│   ├── repositories/      # Interface Kontrak (Abstract)
-│   └── usecases/          # Logika Bisnis per Fitur (AddTodo, Login, etc.)
-├── presentation/          # Layer UI (Tampilan)
-│   ├── controllers/       # GetX Controllers (Logic UI)
-│   ├── pages/             # Halaman Screen
-│   └── widgets/           # Komponen Reusable (Card, InputField)
+│   ├── models/            # Data Models (JSON Parsing)
+│   └── repositories/      # Repository Implementation
+├── domain/                # Domain Layer (Pure Business Logic)
+│   ├── entities/          # Core Business Objects
+│   ├── repositories/      # Contract Interfaces (Abstract)
+│   └── usecases/          # Business Logic per Feature (AddTodo, Login, etc.)
+├── presentation/          # UI Layer (View)
+│   ├── controllers/       # GetX Controllers (UI Logic)
+│   ├── pages/             # Screen Pages
+│   └── widgets/           # Reusable Components (Card, InputField)
 └── core/                  # Utilities, Config, & Constants
 ```
 
 ---
 
-## 🚀 Cara Instalasi
+## 🚀 Installation Guide
 
 ### 1. Clone Repository
 
@@ -122,30 +122,30 @@ cd luar_sekolah_lms
 flutter pub get
 ```
 
-### 3. Konfigurasi Firebase
+### 3. Firebase Configuration
 
-- Pastikan file `google-services.json` (Android) atau `GoogleService-Info.plist` (iOS) ditempatkan di folder yang sesuai.
-- Download file konfigurasi dari Firebase Console project Anda.
-- Letakkan file tersebut di:
+- Ensure `google-services.json` (Android) or `GoogleService-Info.plist` (iOS) files are placed in the appropriate folders.
+- Download configuration files from your Firebase Console project.
+- Place the files at:
   - **Android:** `android/app/google-services.json`
   - **iOS:** `ios/Runner/GoogleService-Info.plist`
 
-### 4. Konfigurasi REST API (Opsional)
+### 4. REST API Configuration (Optional)
 
-Jika menggunakan endpoint API kustom, sesuaikan base URL di file konfigurasi:
+If using a custom API endpoint, adjust the base URL in the configuration file:
 
 ```dart
 // lib/core/config/api_config.dart
 static const String baseUrl = 'https://your-api-endpoint.com';
 ```
 
-### 5. Jalankan Aplikasi
+### 5. Run Application
 
 ```bash
 flutter run
 ```
 
-> **Catatan:** Pastikan emulator/device sudah terhubung sebelum menjalankan aplikasi.
+> **Note:** Ensure emulator/device is connected before running the application.
 
 ---
 
@@ -161,28 +161,30 @@ flutter run
 | :---------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
 | <img width="200" alt="Courses" src="https://github.com/user-attachments/assets/cf1e554c-febd-4754-80a4-b7e8f33a1c3a" /> | <img width="200" alt="Todos" src="https://github.com/user-attachments/assets/84026873-3447-495d-936f-ec63ac58f701" /> | <img width="200" alt="Account" src="https://github.com/user-attachments/assets/98b39bca-3337-4fd2-a323-e023516a7b1f" /> |
 
-## </div>
+</div>
+
+---
 
 ## 🧪 Testing
 
-### Menjalankan Unit Tests
+### Running Unit Tests
 
 ```bash
 flutter test
 ```
 
-### Menjalankan Widget Tests dengan Coverage
+### Running Widget Tests with Coverage
 
 ```bash
 flutter test --coverage
 ```
 
-### Melihat Coverage Report
+### Viewing Coverage Report
 
 ```bash
-# Install lcov terlebih dahulu
+# Install lcov first
 # Linux/Mac: brew install lcov
-# Windows: Gunakan Chocolatey atau manual install
+# Windows: Use Chocolatey or manual install
 
 genhtml coverage/lcov.info -o coverage/html
 open coverage/html/index.html
@@ -190,9 +192,9 @@ open coverage/html/index.html
 
 ---
 
-## 📝 Lisensi
+## 📝 License
 
-Project ini dikembangkan sebagai **Final Project Internship** dan dilisensikan untuk keperluan **Pembelajaran & Portfolio**.
+This project was developed as a **Final Internship Project** and is licensed for **Learning & Portfolio** purposes.
 
 ---
 
@@ -215,4 +217,4 @@ _Internship Final Project - 2025_
 
 ---
 
-**⭐ Jika project ini bermanfaat, jangan lupa berikan Star di repository!**
+**⭐ If you find this project helpful, don't forget to give it a Star on the repository!**
