@@ -7,8 +7,8 @@ class GetAllTodosUseCase {
 
   GetAllTodosUseCase(this.repository);
 
-  // Fungsi 'call' agar class ini bisa dipanggil seperti fungsi
-  Future<List<Todo>> call() {
-    return repository.getTodos();
+  //? UPDATE: Method call sekarang menerima parameter opsional
+  Future<List<Todo>> call({int limit = 20, Todo? startAfter}) {
+    return repository.getTodos(limit: limit, startAfter: startAfter);
   }
 }

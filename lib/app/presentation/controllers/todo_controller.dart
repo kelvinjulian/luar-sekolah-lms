@@ -1,57 +1,68 @@
 // lib/app/presentation/controllers/todo_controller.dart
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-// Import Entities & Use Cases (Layer Domain)
+// Import Entities & Use Cases
 import '../../domain/entities/todo.dart';
 import '../../domain/usecases/todo/add_todo.dart';
 import '../../domain/usecases/todo/delete_todo.dart';
 import '../../domain/usecases/todo/get_all_todos.dart';
 import '../../domain/usecases/todo/update_todo.dart';
 
-// Import Service Notifikasi (Layer Core)
-// Controller butuh akses ke service ini untuk memicu notifikasi lokal
+// Import Service
 import '../../core/services/notification_service.dart';
 
 enum FilterStatus { all, completed, pending }
 
 class TodoController extends GetxController {
-  // --- DEPENDENCY INJECTION ---
-  // Controller tidak tahu menahu soal Firestore/API.
-  // Dia hanya tahu cara memanggil "Use Case" (Resep) yang sudah disiapkan.
+  // --- DEPENDENCIES ---
   final GetAllTodosUseCase getAllTodosUseCase;
   final AddTodoUseCase addTodoUseCase;
   final UpdateTodoUseCase updateTodoUseCase;
   final DeleteTodoUseCase deleteTodoUseCase;
+  final NotificationService notificationService;
 
   TodoController({
     required this.getAllTodosUseCase,
     required this.addTodoUseCase,
     required this.updateTodoUseCase,
     required this.deleteTodoUseCase,
+    required this.notificationService,
   });
 
-  // --- STATE MANAGEMENT (REAKTIF) ---
-  // .obs membuat variabel ini bisa didengarkan perubahannya oleh UI (Obx)
+  // --- STATE UTAMA ---
   final allTodos = <Todo>[].obs;
   final isLoading = false.obs;
-  final errorMessage = Rxn<String>();
   final filterStatus = FilterStatus.all.obs;
   final searchQuery = "".obs;
 
-  // --- GETTER PINTAR (COMPUTED PROPERTY) ---
-  // UI tidak mengambil 'allTodos' secara langsung, tapi mengambil 'filteredTodos'.
-  // Logika filter ditaruh di sini agar UI tetap bersih.
+  // --- STATE FEEDBACK UI ---
+  final errorMessage = Rxn<String>();
+  final successMessage = Rxn<String>();
+
+  // --- PAGINATION STATE ---
+  final ScrollController scrollController = ScrollController();
+  final isMoreLoading = false.obs; // Loading kecil di bawah list
+
+  // PERBAIKAN: Gunakan Todo? sebagai penanda halaman terakhir (bukan DocumentSnapshot)
+  // Ini agar controller tidak perlu tahu tentang objek Firebase
+  Todo? lastTodo;
+
+  bool hasMore = true;
+  final int pageSize = 20;
+
+  // --- GETTER (COMPUTED) ---
   List<Todo> get filteredTodos {
     List<Todo> todos = allTodos;
 
-    // 1. Filter berdasarkan Status (Selesai/Belum)
+    // 1. Filter Status
     if (filterStatus.value == FilterStatus.completed) {
       todos = todos.where((todo) => todo.completed).toList();
     } else if (filterStatus.value == FilterStatus.pending) {
       todos = todos.where((todo) => !todo.completed).toList();
     }
 
-    // 2. Filter berdasarkan Pencarian Teks
+    // 2. Filter Search
     if (searchQuery.value.isNotEmpty) {
       todos = todos
           .where(
@@ -64,170 +75,302 @@ class TodoController extends GetxController {
     return todos;
   }
 
+  // --- LIFECYCLE ---
   @override
   void onInit() {
-    // Saat controller dibuat, langsung ambil data dari Firestore
-    fetchTodos();
     super.onInit();
+    // Load data awal
+    fetchTodos(isRefresh: true);
+
+    // Listener Scroll (Infinite Scroll)
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+              scrollController.position.maxScrollExtent &&
+          !isMoreLoading.value &&
+          hasMore) {
+        // Jika mentok bawah, sedang tidak mengambil data, masih ada halaman berikutnya, maka fetch data selanjutnya
+        fetchTodos();
+      }
+    });
   }
 
-  // --- FUNGSI FETCH DATA ---
-  Future<void> fetchTodos() async {
-    isLoading(true); // Mulai loading
-    errorMessage(null); // Reset error
-    try {
-      // Panggil UseCase untuk ambil data
-      final todos = await getAllTodosUseCase();
-      // Masukkan data ke state reaktif (.assignAll)
-      allTodos.assignAll(todos);
-    } catch (e) {
-      errorMessage(e.toString());
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Listener untuk memunculkan Snackbar (UI Side Effect)
+
+    // 1. Error Listener
+    ever(errorMessage, (String? msg) {
+      if (msg != null && msg.isNotEmpty && !Get.testMode) {
+        Get.snackbar(
+          "Error",
+          msg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    });
+
+    // 2. Success Listener
+    ever(successMessage, (String? msg) {
+      if (msg != null && msg.isNotEmpty && !Get.testMode) {
+        Get.snackbar(
+          "Info",
+          msg,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
+    });
+  }
+
+  // --- FETCH DATA (PAGINATION) ---
+  Future<void> fetchTodos({bool isRefresh = false}) async {
+    // Validasi kondisi
+
+    //? Jika hasMore = false → berarti data di server sudah habis → tidak usah fetch lagi.
+    if (!hasMore && !isRefresh) return; //
+
+    //? Jika sedang loading atau moreLoading → cegah pemanggilan ulang agar tidak double request.
+    if (isLoading.value || isMoreLoading.value) return;
+
+    // Reset State jika Refresh
+    if (isRefresh) {
+      isLoading(true);
+      lastTodo = null; // Reset kursor
+      hasMore = true;
+      allTodos.clear();
+      errorMessage.value = null;
     }
-    isLoading(false); // Selesai loading
+    //? Ini terjadi saat user scroll ke bawah
+    else {
+      isMoreLoading(true);
+    }
+
+    try {
+      // Ini akan membuat spinner berputar selama 2 detik sebelum data diambil
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Panggil UseCase dengan parameter Pagination
+      final newTodos = await getAllTodosUseCase(
+        limit: pageSize, // Ambil data berdasarkan limit (jumlah per halaman)
+        startAfter: lastTodo, // Kirim objek Todo terakhir sebagai kursor
+        // Bila data datang, tambahkan ke list
+      );
+
+      // Cek apakah data habis
+      //? jika data kurang dari pageSize → artinya halaman terakhir → stop load more
+      if (newTodos.length < pageSize) {
+        hasMore = false;
+      }
+
+      // Update kursor untuk halaman berikutnya
+      //? jika data ada, simpan lastTodo sebagai kursor halaman berikutnya
+      if (newTodos.isNotEmpty) {
+        lastTodo = newTodos.last;
+      }
+
+      // Masukkan data ke list
+      allTodos.addAll(newTodos);
+    }
+    // error handling
+    catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading(false);
+      isMoreLoading(false);
+    }
   }
 
-  // ==================================================================
-  // BAGIAN LOGIKA NOTIFIKASI (ACTION-BASED TRIGGER)
-  // ==================================================================
+  // --- ACTIONS ---
 
-  // --- 1. ADD TODO ---
+  // 1. ADD TODO
   Future<void> addTodo(String text) async {
     try {
-      //? Langkah 1: Simpan ke Server (Firestore) dulu.
-      // Kita pakai 'await' agar notifikasi TIDAK muncul kalau simpan ke DB gagal.
       await addTodoUseCase(text);
+      // Refresh list agar data baru muncul di atas dan pagination ter-reset
+      await fetchTodos(isRefresh: true);
 
-      //? Langkah 2: Refresh data di UI agar item baru muncul.
-      await fetchTodos();
-
-      //? Langkah 3: Trigger Notifikasi Lokal
-      // Kita menggunakan Try-Catch terpisah di sini (Nested Try-Catch).
-      // KENAPA? Agar jika sistem notifikasi error (misal izin ditolak),
-      // aplikasi TIDAK crash dan proses tambah todo tetap dianggap sukses.
       try {
-        // Memanggil service singleton (.to)
-        await NotificationService.to.showLocalNotification(
+        await notificationService.showLocalNotification(
           title: "Catatan Baru Ditambahkan",
-          // String Interpolation: Menyisipkan isi 'text' ke dalam pesan notif
           body: "Tugas '$text' berhasil disimpan ke daftar! 📝",
         );
-      } catch (_) {
-        // Silent catch: Abaikan error notifikasi, yang penting data tersimpan.
-      }
+      } catch (_) {}
     } catch (e) {
-      // Ini catch untuk error Firestore (Gagal Simpan)
-      errorMessage("Gagal menambah: ${e.toString()}");
+      errorMessage.value = "Gagal menambah: ${e.toString()}";
     }
   }
 
-  // --- 2. TOGGLE STATUS ---
+  // 2. TOGGLE STATUS
   Future<void> toggleTodoStatus(Todo todo) async {
     try {
-      // Hitung status baru (kebalikan dari status lama)
       final bool isNowCompleted = !todo.completed;
       final updatedTodo = todo.copyWith(completed: isNowCompleted);
 
-      // Update ke Firestore
       await updateTodoUseCase(updatedTodo);
-      await fetchTodos();
 
-      // Logic Dinamis: Pesan notifikasi berbeda tergantung status barunya
+      // Update Lokal (Optimistic UI)
+      final index = allTodos.indexWhere((t) => t.id == todo.id);
+      if (index != -1) {
+        allTodos[index] = updatedTodo;
+      }
+
       String statusMessage = isNowCompleted
-          ? "Selesai dikerjakan! Kerja bagus 🎉" // jika TRUE, pakai kalimat ini
-          : "Ditandai kembali sebagai belum selesai ⏳"; // jika FALSE, pakai kalimat ini
+          ? "Selesai dikerjakan! Kerja bagus 🎉"
+          : "Ditandai kembali sebagai belum selesai ⏳";
 
       try {
-        await NotificationService.to.showLocalNotification(
+        await notificationService.showLocalNotification(
           title: "Status Diperbarui",
-          // Menggunakan nama todo dan pesan status dinamis
           body: "Tugas '${todo.text}' kini $statusMessage",
         );
       } catch (_) {}
     } catch (e) {
-      errorMessage("Gagal update: ${e.toString()}");
+      errorMessage.value = "Gagal update: ${e.toString()}";
     }
   }
 
-  // --- 3. REMOVE TODO (LOGIKA SPESIAL) ---
+  // 3. REMOVE TODO
   Future<void> removeTodo(String id) async {
     try {
-      // TRIK PENTING:
-      // Masalah: Jika kita hapus data ke Firestore dulu, datanya hilang.
-      // Kita tidak bisa tahu apa judul Todo yang dihapus untuk ditaruh di notifikasi.
-
-      // Solusi: Cari dulu Todo-nya di memory lokal (allTodos) berdasarkan ID.
       final todoToDelete = allTodos.firstWhereOrNull((t) => t.id == id);
-      // Simpan judulnya ke variabel sementara. Jika null, pakai default "Item".
       final String todoTitle = todoToDelete?.text ?? "Item";
 
-      // Baru lakukan penghapusan ke Firestore
       await deleteTodoUseCase(id);
-      await fetchTodos();
 
-      // Tampilkan notifikasi menggunakan judul yang sudah kita simpan tadi
+      // Hapus lokal
+      allTodos.removeWhere((t) => t.id == id);
+
       try {
-        await NotificationService.to.showLocalNotification(
+        await notificationService.showLocalNotification(
           title: "Catatan Dihapus",
           body: "Tugas '$todoTitle' telah dihapus dari daftar 🗑️",
         );
       } catch (_) {}
     } catch (e) {
-      errorMessage("Gagal menghapus: ${e.toString()}");
+      errorMessage.value = "Gagal menghapus: ${e.toString()}";
     }
   }
 
+  // 4. UPDATE TODO TEXT
   Future<void> updateTodoText(Todo oldTodo, String newText) async {
     if (oldTodo.text == newText) return;
     try {
       final updatedTodo = oldTodo.copyWith(text: newText);
       await updateTodoUseCase(updatedTodo);
-      await fetchTodos();
-      // Catatan: Di sini kita tidak memasang notifikasi,
-      // tapi jika mau, polanya sama seperti di atas.
+
+      // Refresh list untuk memastikan konsistensi data
+      await fetchTodos(isRefresh: true);
+
+      // Opsional: Notifikasi
+      try {
+        await notificationService.showLocalNotification(
+          title: "Catatan Diubah",
+          body: "Tugas berhasil diubah menjadi '$newText'",
+        );
+      } catch (_) {}
     } catch (e) {
-      errorMessage("Gagal update teks: ${e.toString()}");
+      errorMessage.value = "Gagal update teks: ${e.toString()}";
     }
   }
 
-  // --- FITUR BONUS: SCHEDULE REMINDER ---
+  // 5. SCHEDULE REMINDER
   Future<void> scheduleTodoReminder(Todo todo) async {
     try {
-      print("🕒 Memulai timer manual 5 detik...");
-
-      // // CARA 1: TEST MANUAL (Bukan ZonedSchedule)
-      // // Ini akan menguji apakah masalahnya di 'Permission Alarm' atau 'Tampilan Notifikasi'.
-      // Future.delayed(const Duration(seconds: 10), () async {
-      //   print(
-      //     "⏰ Timer 10 detik habis! Mencoba memunculkan notifikasi SEKARANG...",
-      //   );
-      //   await NotificationService.to.showLocalNotification(
-      //     title: "TEST MANUAL",
-      //     body:
-      //         "Jika ini muncul, berarti Izin Notifikasi AMAN. Masalahnya ada di fitur Schedule/Alarm.",
-      //   );
-      // });
-
-      // --- CARA 2: SCHEDULE ASLI (Komentari dulu yang ini) ---
       final scheduledTime = DateTime.now().add(const Duration(seconds: 5));
-      await NotificationService.to.scheduleNotification(
+
+      await notificationService.scheduleNotification(
         id: DateTime.now().millisecond,
         title: "⏰ Pengingat Tugas",
         body: "Jangan lupa kerjakan: '${todo.text}'!",
         scheduledDate: scheduledTime,
       );
 
-      Get.snackbar("Test", "Tunggu 5 detik...");
+      // Trigger Snackbar Sukses lewat variabel state
+      successMessage.value = "Tunggu 5 detik...";
     } catch (e) {
-      errorMessage("Gagal jadwal: $e");
+      errorMessage.value = "Gagal jadwal: $e";
     }
   }
 
-  // --- FUNGSI FILTER UI ---
-  void setFilter(FilterStatus status) {
-    filterStatus(status);
+  //! --- DEBUGGING / TESTING ONLY ---
+  // Inject 50 Dummy Data
+  Future<void> injectDummyData() async {
+    // Pastikan tidak double request
+    if (isLoading.value) return;
+
+    isLoading(true);
+    successMessage.value = "Sedang generate 50 data...";
+
+    try {
+      // Loop 50 kali
+      for (int i = 1; i <= 50; i++) {
+        await addTodoUseCase("Dummy Task #$i - Generated");
+        // Opsional: Kasih delay dikit biar tidak kena rate limit Firestore (kalau koneksi lambat)
+        // await Future.delayed(const Duration(milliseconds: 50));
+        //  TAMBAHKAN DELAY DI SINI (Misal 100ms per item)
+        // Ini biar tidak terlalu ngebut, jadi terasa prosesnya
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
+      // Refresh list setelah semua selesai
+      await fetchTodos(isRefresh: true);
+
+      successMessage.value = "Berhasil inject 50 data!";
+    } catch (e) {
+      errorMessage.value = "Gagal inject: $e";
+    } finally {
+      isLoading(false);
+    }
   }
 
-  void setSearchQuery(String query) {
-    searchQuery(query);
+  //! --- DEBUG: HAPUS SEMUA DATA ---
+  Future<void> deleteAllTodos() async {
+    if (isLoading.value) return;
+
+    // Cek jika list kosong
+    if (allTodos.isEmpty) {
+      errorMessage.value = "List sudah kosong!";
+      return;
+    }
+
+    isLoading(true);
+    successMessage.value = "Sedang menghapus semua data...";
+
+    try {
+      // 1. Ambil semua ID dari data yang sedang dimuat
+      // Kita butuh copy list ID karena allTodos akan berubah
+      final idsToDelete = allTodos
+          .map((todo) => todo.id)
+          .whereType<String>()
+          .toList();
+
+      // 2. Loop dan hapus satu per satu
+      for (final id in idsToDelete) {
+        await deleteTodoUseCase(id);
+      }
+
+      // 3. Bersihkan state lokal & reset pagination
+      allTodos.clear();
+      lastTodo = null;
+      hasMore = true; // Reset agar fetch selanjutnya mulai dari awal
+
+      successMessage.value = "Semua data berhasil dihapus!";
+    } catch (e) {
+      errorMessage.value = "Gagal menghapus sebagian data: $e";
+    } finally {
+      isLoading(false);
+    }
   }
+
+  // --- UI FILTERS ---
+  void setFilter(FilterStatus status) => filterStatus(status);
+  void setSearchQuery(String query) => searchQuery(query);
 }

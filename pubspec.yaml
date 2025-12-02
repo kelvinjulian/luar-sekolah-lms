@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # UI & Utilities
   flutter_svg: ^2.0.9
   google_fonts: ^6.3.2
   shared_preferences: ^2.2.2
@@ -41,14 +42,14 @@ dependencies:
 
   get: ^4.7.2
 
-  # --- FIREBASE ---
+  # Firebase
   # Versi Core dan Auth Anda sangat baru, jadi Messaging juga harus versi terbaru
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
   firebase_messaging: ^16.0.4 # DIPERBARUI: Naik dari 15.2.1 ke 16.0.4 agar kompatibel dengan Core 4.x
 
-  # --- NOTIFICATIONS ---
+  # Notifications
   flutter_local_notifications: ^18.0.1
 
   timezone: ^0.9.2
@@ -56,6 +57,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Testing Mocks
+  mocktail: ^1.0.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

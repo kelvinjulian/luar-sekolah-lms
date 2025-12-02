@@ -1,17 +1,22 @@
 // lib/app/core/bindings/todo_binding.dart
 import 'package:get/get.dart';
 
-//? --- PERBAIKAN: Import file yang relevan ---
-// import '../../data/datasources/todo_remote_data_source.dart';
-//? --- PERBAIKAN: Ganti import remote ke firestore ---
+// Import Data Layer
 import '../../data/datasources/todo_firestore_data_source.dart';
 import '../../data/repositories/todo_repository_impl.dart';
+
+// Import Domain Layer
 import '../../domain/repositories/i_todo_repository.dart';
 import '../../domain/usecases/todo/add_todo.dart';
 import '../../domain/usecases/todo/delete_todo.dart';
 import '../../domain/usecases/todo/get_all_todos.dart';
 import '../../domain/usecases/todo/update_todo.dart';
+
+// Import Presentation Layer
 import '../../presentation/controllers/todo_controller.dart';
+
+// ✅ PERBAIKAN 1: Import Notification Service
+import '../services/notification_service.dart';
 
 class TodoBinding extends Bindings {
   @override
@@ -43,6 +48,8 @@ class TodoBinding extends Bindings {
         addTodoUseCase: Get.find<AddTodoUseCase>(),
         updateTodoUseCase: Get.find<UpdateTodoUseCase>(),
         deleteTodoUseCase: Get.find<DeleteTodoUseCase>(),
+        // ✅ PERBAIKAN 2: Inject Notification Service di sini
+        notificationService: Get.find<NotificationService>(),
       ),
     );
   }
