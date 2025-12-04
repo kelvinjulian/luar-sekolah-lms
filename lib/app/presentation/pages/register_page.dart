@@ -218,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
             "Satu akun untuk akses Luarsekolah dan BelajarBekerja",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontSize: 16,
-              fontWeight: FontWeight.w100,
+              fontWeight: FontWeight.w300,
               color: const Color(0xFF7B7F95),
             ),
           ),
@@ -454,28 +454,58 @@ class _RegisterPageState extends State<RegisterPage> {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: const Color(0xFF5b94f0)),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("👋 ", style: TextStyle(fontSize: 15)),
-                  const Text(
-                    "Sudah punya akun? ",
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  GestureDetector(
-                    onTap: () => Get.toNamed('/login'),
-                    child: const Text(
-                      "Masuk ke akunmu",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF5b94f0),
-                        decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFF5b94f0),
+              child:
+                  // Row(
+                  //   mainAxisSize: MainAxisSize.min,
+                  //   children: [
+                  //     const Text("👋 ", style: TextStyle(fontSize: 15)),
+                  //     const Text(
+                  //       "Sudah punya akun? ",
+                  //       style: TextStyle(fontSize: 15),
+                  //     ),
+                  //     GestureDetector(
+                  //       onTap: () => Get.toNamed('/login'),
+                  //       child: const Text(
+                  //         "Masuk ke akunmu",
+                  //         style: TextStyle(
+                  //           fontSize: 15,
+                  //           color: Color(0xFF5b94f0),
+                  //           decoration: TextDecoration.underline,
+                  //           decorationColor: Color(0xFF5b94f0),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  Wrap(
+                    alignment: WrapAlignment
+                        .center, // Ratakan tengah secara horizontal
+                    crossAxisAlignment: WrapCrossAlignment
+                        .center, // Ratakan tengah secara vertikal
+                    spacing: 4, // Jarak antar elemen (pengganti SizedBox width)
+                    runSpacing:
+                        4, // Jarak antar baris (jika teks turun ke bawah)
+                    children: [
+                      const Text("👋 ", style: TextStyle(fontSize: 15)),
+                      const Text(
+                        "Sudah punya akun?",
+                        style: TextStyle(fontSize: 15),
                       ),
-                    ),
+                      GestureDetector(
+                        onTap: () => Get.toNamed('/login'),
+                        child: const Text(
+                          "Masuk ke akunmu",
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF5b94f0), // Sesuaikan warna birumu
+                            decoration: TextDecoration.underline,
+                            decorationColor: Color(0xFF5b94f0),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: 30),

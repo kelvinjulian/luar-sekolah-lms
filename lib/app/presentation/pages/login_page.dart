@@ -74,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
             "Satu akun untuk akses Luarsekolah dan BelajarBekerja",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontSize: 16,
-              fontWeight: FontWeight.w100,
+              fontWeight: FontWeight.w300,
               color: const Color(0xFF7B7F95),
             ),
           ),
@@ -231,7 +231,13 @@ class _LoginPageState extends State<LoginPage> {
                 // 4. Ganti child berdasarkan state loading Controller
                 child: authC.isLoading.value
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Masuk"),
+                    : const Text(
+                        "Masuk",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -248,30 +254,60 @@ class _LoginPageState extends State<LoginPage> {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: const Color(0xFF5b94f0)),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("👋 ", style: TextStyle(fontSize: 15)),
-                  const Text(
-                    "Belum punya akun? ",
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Get.toNamed('/register');
-                    },
-                    child: const Text(
-                      "Daftar sekarang",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF5b94f0),
-                        decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFF5b94f0),
+              child:
+                  // Row(
+                  //   mainAxisSize: MainAxisSize.min,
+                  //   children: [
+                  //     const Text("👋 ", style: TextStyle(fontSize: 15)),
+                  //     const Text(
+                  //       "Belum punya akun? ",
+                  //       style: TextStyle(fontSize: 15),
+                  //     ),
+                  //     GestureDetector(
+                  //       onTap: () {
+                  //         Get.toNamed('/register');
+                  //       },
+                  //       child: const Text(
+                  //         "Daftar sekarang",
+                  //         style: TextStyle(
+                  //           fontSize: 15,
+                  //           color: Color(0xFF5b94f0),
+                  //           decoration: TextDecoration.underline,
+                  //           decorationColor: Color(0xFF5b94f0),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  Wrap(
+                    alignment: WrapAlignment
+                        .center, // Ratakan tengah secara horizontal
+                    crossAxisAlignment: WrapCrossAlignment
+                        .center, // Ratakan tengah secara vertikal
+                    spacing: 4, // Jarak antar elemen (pengganti SizedBox width)
+                    runSpacing:
+                        4, // Jarak antar baris (jika teks turun ke bawah)
+                    children: [
+                      const Text("👋 ", style: TextStyle(fontSize: 15)),
+                      const Text(
+                        "Belum punya akun?",
+                        style: TextStyle(fontSize: 15),
                       ),
-                    ),
+                      GestureDetector(
+                        onTap: () => Get.toNamed('/register'),
+                        child: const Text(
+                          "Daftar sekarang",
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF5b94f0), // Sesuaikan warna birumu
+                            decoration: TextDecoration.underline,
+                            decorationColor: Color(0xFF5b94f0),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: 30),

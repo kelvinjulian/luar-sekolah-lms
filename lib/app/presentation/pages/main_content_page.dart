@@ -1,4 +1,5 @@
-import 'dart:io'; // WAJIB ADA untuk File
+// lib/app/presentation/pages/main_content_page.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -38,12 +39,16 @@ class _MainContentPageState extends State<MainContentPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Ambil tinggi status bar (notch) dari sistem
+    final double topPadding = MediaQuery.of(context).padding.top;
+
     return Column(
       children: [
-        // HEADER
+        // HEADER HIJAU
         Padding(
-          padding: const EdgeInsets.only(
-            top: 60,
+          padding: EdgeInsets.only(
+            // GANTI padding statis: 60 menjadi padding dinamis (Status Bar + margin 16)
+            top: topPadding + 16,
             left: 24,
             right: 24,
             bottom: 24,
@@ -59,7 +64,6 @@ class _MainContentPageState extends State<MainContentPage> {
                     final localPath = authC.localPhotoPath.value;
 
                     ImageProvider bgImage;
-                    // Cek apakah ada foto lokal yang tersimpan
                     if (localPath != null && File(localPath).existsSync()) {
                       bgImage = FileImage(File(localPath));
                     } else if (user?.photoURL != null) {
@@ -119,163 +123,175 @@ class _MainContentPageState extends State<MainContentPage> {
                 topRight: Radius.circular(18),
               ),
             ),
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              children: [
-                CarouselBanner(
-                  pageController: _pageController,
-                  banners: promoBanners,
-                  currentPage: _currentPage,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
+            // PENTING: Gunakan SafeArea di sini untuk mengatasi Bottom Inset
+            child: SafeArea(
+              top: false, // Sudah ditangani di padding atas
+              bottom: true, // Pastikan konten tidak terpotong BottomNavBar
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
                 ),
-                const SizedBox(height: 34),
-
-                const Text(
-                  "Program dari Luarsekolah",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ProgramCard(
-                      label: "Prakerja",
-                      icon: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: SvgPicture.asset(
-                          'assets/icons/prakerja-icon.svg',
-                        ),
-                      ),
-                    ),
-                    ProgramCard(
-                      label: "magang+",
-                      icon: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: SvgPicture.asset('assets/icons/magang-icon.svg'),
-                      ),
-                    ),
-                    ProgramCard(
-                      label: "Subs",
-                      icon: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: SvgPicture.asset(
-                          'assets/icons/luarsekolah-icon.svg',
-                        ),
-                      ),
-                    ),
-                    ProgramCard(
-                      label: "Lainnya",
-                      icon: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: SvgPicture.asset(
-                          'assets/icons/lainnya-icon.svg',
-                          width: 20,
-                          height: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                RedeemVoucherCard(
-                  logo: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: SvgPicture.asset(
-                      'assets/icons/handphone-icon.svg',
-                      width: 48,
-                      height: 48,
-                    ),
+                children: [
+                  CarouselBanner(
+                    pageController: _pageController,
+                    banners: promoBanners,
+                    currentPage: _currentPage,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 34),
 
-                const Text(
-                  "Kelas Terpopuler di Prakerja",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 250,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+                  const Text(
+                    "Program dari Luarsekolah",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CourseCard(
-                        title: "Teknik Pemilahan dan Pengolahan Sampah",
-                        price: "Rp 1.500.000",
-                        rating: 4.5,
-                        tags: const ["Prakerja", "SPL"],
-                        tagColors: const [tagBlue, tagGreen],
-                        image: "assets/images/course1.png",
+                      ProgramCard(
+                        label: "Prakerja",
+                        icon: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: SvgPicture.asset(
+                            'assets/icons/prakerja-icon.svg',
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      CourseCard(
-                        title: "Meningkatkan Pertumbuhan Tanaman untuk Petani",
-                        price: "Rp 1.500.000",
-                        rating: 4.5,
-                        tags: const ["Prakerja"],
-                        tagColors: const [tagBlue],
-                        image: "assets/images/course2.png",
+                      // ... (ProgramCard lainnya tetap sama) ...
+                      ProgramCard(
+                        label: "magang+",
+                        icon: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: SvgPicture.asset(
+                            'assets/icons/magang-icon.svg',
+                          ),
+                        ),
+                      ),
+                      ProgramCard(
+                        label: "Subs",
+                        icon: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: SvgPicture.asset(
+                            'assets/icons/luarsekolah-icon.svg',
+                          ),
+                        ),
+                      ),
+                      ProgramCard(
+                        label: "Lainnya",
+                        icon: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: SvgPicture.asset(
+                            'assets/icons/lainnya-icon.svg',
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      foregroundColor: tagBlue,
-                    ),
-                    child: const Text("Lihat Semua Kelas"),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                const Text(
-                  "Akses Semua Kelas dengan Berlangganan",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 220,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: const [
-                      SubscriptionCard(
-                        title: "Belajar SwiftUI Untuk Pembuatan Interface",
-                        image: "assets/images/subscription1.png",
-                        courses: 5,
+                  RedeemVoucherCard(
+                    logo: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: SvgPicture.asset(
+                        'assets/icons/handphone-icon.svg',
+                        width: 48,
+                        height: 48,
                       ),
-                      SizedBox(width: 12),
-                      SubscriptionCard(
-                        title: "Belajar Dart Untuk Pembuatan Aplikasi",
-                        image: "assets/images/subscription2.png",
-                        courses: 5,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      foregroundColor: tagBlue,
                     ),
-                    child: const Text("Lihat Semua"),
                   ),
-                ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    "Kelas Terpopuler di Prakerja",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 250,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        CourseCard(
+                          title: "Teknik Pemilahan dan Pengolahan Sampah",
+                          price: "Rp 1.500.000",
+                          rating: 4.5,
+                          tags: const ["Prakerja", "SPL"],
+                          tagColors: const [tagBlue, tagGreen],
+                          image: "assets/images/course1.png",
+                        ),
+                        const SizedBox(width: 12),
+                        CourseCard(
+                          title:
+                              "Meningkatkan Pertumbuhan Tanaman untuk Petani",
+                          price: "Rp 1.500.000",
+                          rating: 4.5,
+                          tags: const ["Prakerja"],
+                          tagColors: const [tagBlue],
+                          image: "assets/images/course2.png",
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        foregroundColor: tagBlue,
+                      ),
+                      child: const Text("Lihat Semua Kelas"),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    "Akses Semua Kelas dengan Berlangganan",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 220,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: const [
+                        SubscriptionCard(
+                          title: "Belajar SwiftUI Untuk Pembuatan Interface",
+                          image: "assets/images/subscription1.png",
+                          courses: 5,
+                        ),
+                        SizedBox(width: 12),
+                        SubscriptionCard(
+                          title: "Belajar Dart Untuk Pembuatan Aplikasi",
+                          image: "assets/images/subscription2.png",
+                          courses: 5,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        foregroundColor: tagBlue,
+                      ),
+                      child: const Text("Lihat Semua"),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),
