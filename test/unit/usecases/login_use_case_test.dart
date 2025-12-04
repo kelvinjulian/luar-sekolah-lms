@@ -21,32 +21,63 @@ void main() {
     useCase = LoginUseCase(mockRepository);
   });
 
+  //TODO bagian yang diminta ka zahid untuk diperbaiki, karena sebelumnya belum cek rawEmail apakah benar benar menjadi cleanEmail, bukan hanya verify panggilan saja
   group('LoginUseCase Tests', () {
     //* SKENARIO 1: SUKSES (Happy Path)
     // Password dummy harus memenuhi SEMUA syarat: 8 char, 1 Kapital, 1 Simbol
-    test('should trim inputs and call repository successfully', () async {
-      //? ARRANGE
-      const rawEmail = '  test@example.com  ';
-      const cleanEmail = 'test@example.com';
-      const password =
-          'Password@123'; // <-- Valid (Ada P besar, ada @, panjang > 8)
+    // Skenario ini memastikan input di-trim dan diteruskan ke repository dengan benar
+    test('should trim the rawEmail into cleanEmail correctly', () async {
+      // ARRANGE — menyiapkan dependency & input
+      final repo = MockIAuthRepository();
+      // Membuat mock repository yang akan menangkap parameter yang dikirim usecase
 
-      // Stub: Repository sukses
+      final usecase = LoginUseCase(repo);
+      // Inject mock ke dalam usecase agar pemanggilan login diarahkan ke mock, bukan server
+
+      final rawEmail = "   test@gmail.com   ";
+      // Email mengandung spasi di depan dan belakang untuk menguji proses trimming
+
+      final rawPassword = "   Abcd1234!   ";
+      // Password valid + diberi spasi supaya trimming password juga ikut teruji
+      // (meski test ini fokus di email, trimming password tetap terjadi dalam usecase)
+
+      // Stub/mock behavior:
+      // Ketika loginWithEmail dipanggil dengan nilai apa pun, balikan nilai dummy.
       when(
-        () => mockRepository.loginWithEmail(cleanEmail, password),
+        () => repo.loginWithEmail(any(), any()),
       ).thenAnswer((_) async => MockUserCredential());
+      // Tujuan: bukan mengetes repository, hanya memvalidasi parameter yang dikirim ke repo.
 
-      //? ACT
-      await useCase(rawEmail, password);
+      // ACT — eksekusi usecase dengan email & password yang masih kotor (belum trimmed)
+      await usecase(rawEmail, rawPassword);
 
-      // ASSERT
-      verify(
-        () => mockRepository.loginWithEmail(cleanEmail, password),
-      ).called(1); // perbaiki
+      // ASSERT — memeriksa apakah email yang dikirim ke repository sudah di-trim
+      final captured =
+          verify(() => repo.loginWithEmail(captureAny(), any())).captured.first
+              as String;
+      // captureAny() menangkap argument pertama (email)
+      // .captured.first memberikan nilai email yang dikirimkan oleh usecase
+
+      expect(captured, equals("test@gmail.com"));
+      // Memastikan hasil email yang dikirim repository sudah bersih tanpa spasi
+    });
+
+    // --- SKENARIO VALIDASI TRIMMED KOSONG ---
+    test('should throw error when trimmed email is empty', () async {
+      // ARRANGE
+      const rawEmail = '   '; // hanya spasi → setelah trim() = ''
+
+      // ACT + ASSERT
+      expect(
+        () => useCase(rawEmail, 'Password@123'),
+        throwsA(isA<Exception>()), // atau sesuai error yang kamu lempar
+      );
+
+      // Repository tidak boleh dipanggil
+      verifyNever(() => mockRepository.loginWithEmail(any(), any()));
     });
 
     // --- SKENARIO VALIDASI EXISTING ---
-
     test('should throw Exception when email is empty', () async {
       expect(
         () => useCase('', 'Password@123'),
