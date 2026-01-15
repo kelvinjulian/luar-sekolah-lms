@@ -122,18 +122,18 @@ class TodoListPage extends StatelessWidget {
                       style: ButtonStyle(
                         visualDensity: VisualDensity.compact,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: MaterialStateProperty.resolveWith((
+                        backgroundColor: WidgetStateProperty.resolveWith((
                           states,
                         ) {
-                          if (states.contains(MaterialState.selected)) {
+                          if (states.contains(WidgetState.selected)) {
                             return lsGreen.withOpacity(0.1);
                           }
                           return null;
                         }),
-                        foregroundColor: MaterialStateProperty.resolveWith((
+                        foregroundColor: WidgetStateProperty.resolveWith((
                           states,
                         ) {
-                          if (states.contains(MaterialState.selected)) {
+                          if (states.contains(WidgetState.selected)) {
                             return lsGreen;
                           }
                           return Colors.grey[700];

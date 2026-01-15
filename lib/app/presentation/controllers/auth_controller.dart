@@ -91,7 +91,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // --- FUNGSI UPDATE FOTO ---
+  //? --- FUNGSI UPDATE FOTO ---
   Future<void> updateLocalPhoto(String path) async {
     final user = _user.value;
     if (user != null) {
@@ -128,13 +128,13 @@ class AuthController extends GetxController {
     } on FirebaseAuthException catch (e) {
       errorMessage.value = e.message ?? "Gagal Login";
     } catch (e) {
-      errorMessage.value = "Terjadi kesalahan tidak terduga";
+      errorMessage.value = "Password atau email salah";
     } finally {
       isLoading(false);
     }
   }
 
-  // --- REGISTER (Update Navigasi Manual) ---
+  //? --- REGISTER (Update Navigasi Manual) ---
   Future<void> register(String name, String email, String password) async {
     isLoading(true);
     _resetMessages();
@@ -142,11 +142,12 @@ class AuthController extends GetxController {
     try {
       await registerUseCase(email, password);
 
+      //? Langsung update display name setelah registrasi
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await user.updateDisplayName(name);
-        await user.reload();
-        _user.value = FirebaseAuth.instance.currentUser;
+        await user.reload(); // Refresh data user lokal
+        _user.value = FirebaseAuth.instance.currentUser; // Trigger UI update
       }
 
       successMessage.value = "Registrasi Berhasil!";

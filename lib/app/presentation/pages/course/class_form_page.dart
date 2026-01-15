@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'dart:io'; // Penting untuk File
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../widgets/input_field.dart';
-import '../../../domain/entities/course.dart'; // Untuk konstanta warna
+// import '../../../domain/entities/course.dart';
 
 const Color lsGreen = Color(0xFF0DA680);
 const Color lsGreenLight = Color(0xFF18C093);
@@ -25,8 +25,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
   File? _selectedImageFile;
   final ImagePicker _picker = ImagePicker();
 
-  // STATE CHECKBOX
-  bool _isPopuler = false; // <-- Baru
+  bool _isPopuler = false;
   bool _isPrakerja = false;
   bool _isSPL = false;
 
@@ -79,27 +78,26 @@ class _ClassFormPageState extends State<ClassFormPage> {
 
   void _simpanPerubahan() {
     if (_formKey.currentState!.validate()) {
-      // 1. Kumpulkan Tags
       List<String> tags = [];
       List<String> tagColorsHex = [];
 
+      // Sesuai dengan pilihan checkbox Anda
       if (_isPopuler) {
         tags.add('Populer');
-        tagColorsHex.add("0xFFFF4500"); // Orange Red untuk Populer
+        tagColorsHex.add("0xFF0DA680");
       }
       if (_isPrakerja) {
         tags.add('Prakerja');
-        tagColorsHex.add(Course.tagBlueHex);
+        tagColorsHex.add("0xFF9C27B0");
       }
       if (_isSPL) {
         tags.add('SPL');
-        tagColorsHex.add(Course.tagGreenHex);
+        tagColorsHex.add("0xFF2196F3");
       }
 
-      // Jika tidak ada yang dicentang, anggap Lainnya
       if (tags.isEmpty) {
         tags.add('Lainnya');
-        tagColorsHex.add(Course.tagPurpleHex);
+        tagColorsHex.add("0xFF808080");
       }
 
       final dataKelas = {
@@ -109,8 +107,7 @@ class _ClassFormPageState extends State<ClassFormPage> {
         'thumbnail': _currentThumbnailUrl,
         'imageFile': _selectedImageFile,
         'tags': tags,
-        'tagColorsHex':
-            tagColorsHex, // (Sebenarnya generate di server/entity, tapi kirim aja gapapa)
+        'tagColorsHex': tagColorsHex,
       };
 
       Navigator.pop(context, dataKelas);
@@ -135,7 +132,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
                       ? 'Tambah Kelas Baru'
                       : 'Edit Informasi Kelas',
                   style: const TextStyle(
-                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -147,28 +143,19 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 15),
-
               InputField(
                 label: 'Nama Kelas',
                 controller: _namaController,
                 hint: 'e.g Marketing Communication',
-                validator: (val) => val == null || val.isEmpty
-                    ? 'Nama kelas wajib diisi'
-                    : null,
               ),
               const SizedBox(height: 24),
-
               InputField(
                 label: 'Harga Kelas (Rp)',
                 controller: _hargaController,
                 hint: 'e.g 100000',
                 keyboardType: TextInputType.number,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Harga wajib diisi' : null,
               ),
               const SizedBox(height: 24),
-
-              // --- KATEGORI BARU ---
               const Text(
                 'Kategori Kelas',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
@@ -181,7 +168,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 ),
                 child: Column(
                   children: [
-                    // Opsi Populer
                     CheckboxListTile(
                       title: const Text('Populer'),
                       value: _isPopuler,
@@ -209,8 +195,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // --- UPLOAD FOTO ---
               const Text(
                 'Thumbnail Kelas',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
@@ -233,8 +217,6 @@ class _ClassFormPageState extends State<ClassFormPage> {
                 ),
               ),
               const SizedBox(height: 40),
-
-              // --- BUTTONS ---
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -273,7 +255,9 @@ class _ClassFormPageState extends State<ClassFormPage> {
     );
   }
 
+  // PERBAIKAN PADA BAGIAN INI
   Widget _buildImagePreview() {
+    // 1. Jika ada file yang baru dipilih dari galeri
     if (_selectedImageFile != null) {
       return Image.file(
         _selectedImageFile!,
@@ -281,8 +265,11 @@ class _ClassFormPageState extends State<ClassFormPage> {
         width: double.infinity,
       );
     }
+
+    // 2. Jika dalam mode edit (memuat data lama)
     if (_currentThumbnailUrl != null && _currentThumbnailUrl!.isNotEmpty) {
       if (_currentThumbnailUrl!.startsWith('http')) {
+        // Gambar dari internet
         return Image.network(
           _currentThumbnailUrl!,
           fit: BoxFit.cover,
@@ -291,9 +278,16 @@ class _ClassFormPageState extends State<ClassFormPage> {
               const Center(child: Icon(Icons.broken_image)),
         );
       } else {
-        return Image.asset(_currentThumbnailUrl!, fit: BoxFit.cover);
+        // PERBAIKAN: Gunakan Image.file untuk path lokal dummy
+        return Image.file(
+          File(_currentThumbnailUrl!),
+          fit: BoxFit.cover,
+          width: double.infinity,
+        );
       }
     }
+
+    // 3. Tampilan default
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [

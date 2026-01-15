@@ -47,7 +47,7 @@ class TodoController extends GetxController {
   bool hasMore = true;
   final int pageSize = 20;
 
-  // --- GETTER (FILTER & SORTING OTOMATIS) ---
+  //? --- GETTER (FILTER & SORTING OTOMATIS) ---
   List<Todo> get filteredTodos {
     // 1. Copy list agar aman
     List<Todo> todos = List.from(allTodos);

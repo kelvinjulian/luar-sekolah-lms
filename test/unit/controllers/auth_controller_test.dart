@@ -1,5 +1,4 @@
 //* 1. IMPORT
-// Mengimpor library testing, GetX, Mocktail, dan file-file asli project.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,6 +21,8 @@ class MockLogoutUseCase extends Mock implements LogoutUseCase {}
 
 class MockUserCredential extends Mock implements UserCredential {}
 
+class MockUser extends Mock implements User {}
+
 void main() {
   late AuthController controller;
   late MockLoginUseCase mockLoginUseCase;
@@ -37,67 +38,78 @@ void main() {
     mockLogoutUseCase = MockLogoutUseCase();
     mockAuthRepository = MockIAuthRepository();
 
-    //? Stubbing: Mengatur agar stream authStateChanges mengembalikan null (User Logged Out)
+    // Stubbing: stream authStateChanges aman untuk test
     when(
       () => mockAuthRepository.authStateChanges,
-    ).thenAnswer((_) => Stream.value(null));
+    ).thenAnswer((_) => Stream<User?>.empty());
 
-    //? Reset: Membersihkan state GetX sebelum setiap test
+    // Reset GetX sebelum setiap test
     Get.reset();
+    Get.testMode = true; // Disable snackbar di test
 
-    // Inisialisasi Controller dengan Dependency Palsu (Mock)
+    // Inisialisasi Controller dengan Mock
     controller = AuthController(
       loginUseCase: mockLoginUseCase,
       registerUseCase: mockRegisterUseCase,
       logoutUseCase: mockLogoutUseCase,
       authRepository: mockAuthRepository,
     );
-    controller.onInit(); // Jalankan onInit manual
+    controller.onInit();
   });
 
   group('AuthController Logic (Reactive State Pattern)', () {
     const email = 'test@example.com';
     const password = 'password123';
 
-    //* SKENARIO: LOGIN SUKSES
+    //* LOGIN SUCCESS
     test(
       'login success: isLoading updates, errorMessage remains empty',
       () async {
-        //? ARRANGE: Latih Mock agar mengembalikan sukses
+        // ARRANGE: Stub loginUseCase sesuai signature .call()
         when(
-          () => mockLoginUseCase(email, password),
+          () => mockLoginUseCase.call(email, password),
         ).thenAnswer((_) async => MockUserCredential());
 
-        //? ACT: Panggil fungsi login
+        // ACT
         final future = controller.login(email, password);
 
-        // Cek state loading AWAL (harus true saat proses berjalan)
-        expect(controller.isLoading.value, isTrue); // Cek loading awal
-        await future; // Tunggu proses selesai
+        // LOADING harus true saat proses berjalan
+        expect(controller.isLoading.value, isTrue);
 
-        //? ASSERT: Cek state AKHIR
-        expect(controller.isLoading.value, isFalse); // Loading harus mati
-        expect(controller.errorMessage.value, isEmpty); // Tidak boleh ada error
+        await future;
+
+        // ASSERT
+        expect(controller.isLoading.value, isFalse);
+        expect(controller.errorMessage.value, isEmpty);
       },
     );
 
-    //* SKENARIO: LOGIN GAGAL
+    //* LOGIN FAILURE
     test('login failure: updates errorMessage correctly', () async {
-      //? ARRANGE: Latih Mock agar melempar error Firebase
+      // ARRANGE: Stub loginUseCase untuk lempar FirebaseAuthException
       const errorMsg = 'User not found in database';
-      when(() => mockLoginUseCase(email, password)).thenThrow(
+      when(() => mockLoginUseCase.call(email, password)).thenThrow(
         FirebaseAuthException(code: 'user-not-found', message: errorMsg),
       );
 
-      //? ACT: Panggil fungsi login
+      // ACT
       await controller.login(email, password);
 
-      //? ASSERT: Verifikasi State
+      // ASSERT
       expect(controller.isLoading.value, isFalse);
-
-      // KUNCI TESTING: Kita mengecek variabel errorMessage, BUKAN Snackbar UI.
-      // Ini membuktikan logika controller menangkap error dengan benar.
       expect(controller.errorMessage.value, errorMsg);
+    });
+
+    //* LOGIN FAILURE GENERIC ERROR
+    test('login failure: updates errorMessage on unexpected error', () async {
+      when(
+        () => mockLoginUseCase.call(email, password),
+      ).thenThrow(Exception('oops'));
+
+      await controller.login(email, password);
+
+      expect(controller.isLoading.value, isFalse);
+      expect(controller.errorMessage.value, 'Terjadi kesalahan tidak terduga');
     });
   });
 }

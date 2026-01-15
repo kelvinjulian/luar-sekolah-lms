@@ -1,6 +1,7 @@
 // lib/widgets/custom_cards.dart
 
 // Import library bawaan Flutter untuk membangun UI
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 // =================================================================
@@ -391,7 +392,7 @@ class SubscriptionCard extends StatelessWidget {
 
 // TODO
 // =================================================================
-// 6. WIDGET ADMIN COURSE CARD (PERBAIKAN: Support Network Image & Anti-Overflow)
+// 6. WIDGET ADMIN COURSE CARD (FIX: Support Network & Local File)
 // =================================================================
 class AdminCourseCard extends StatelessWidget {
   final String title;
@@ -405,13 +406,59 @@ class AdminCourseCard extends StatelessWidget {
   const AdminCourseCard({
     super.key,
     required this.title,
-    required this.image, // Sekarang ini berisi URL (http...)
+    required this.image,
     required this.tags,
     required this.tagColors,
     required this.price,
     required this.onEdit,
     required this.onDelete,
   });
+
+  // HELPER UNTUK MEMILIH JENIS IMAGE WIDGET
+  Widget _buildImage() {
+    // Jika path diawali 'http', gunakan Image.network
+    if (image.startsWith('http')) {
+      return Image.network(
+        image,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildLoadingIndicator();
+        },
+      );
+    }
+    // Jika path adalah file lokal (hasil upload dummy)
+    else if (image.isNotEmpty) {
+      return Image.file(
+        File(image),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+    // Jika kosong sama sekali
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -433,67 +480,38 @@ class AdminCourseCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. GAMBAR THUMBNAIL (Fixed Size & Network Image)
+          // 1. GAMBAR THUMBNAIL (Sudah diperbaiki)
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               width: 80,
               height: 80,
-              child: Image.network(
-                image,
-                fit: BoxFit.cover,
-                // Jika URL dari API error/mati/dummy, tampilkan gambar aset lokal
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                    'assets/images/course1.png', // Pastikan aset ini ada
-                    fit: BoxFit.cover,
-                  );
-                },
-                // Loading indicator saat gambar sedang didownload
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: _buildImage(), // Memanggil fungsi helper di atas
             ),
           ),
           const SizedBox(width: 12),
 
-          // 2. INFORMASI KELAS (Expanded mencegah Overflow ke kanan)
+          // 2. INFORMASI KELAS
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Judul Kelas
                 Text(
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
-                  maxLines: 2, // Batasi 2 baris
-                  overflow:
-                      TextOverflow.ellipsis, // Titik-titik jika kepanjangan
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-
-                // Tags (Wrap sudah aman di dalam Expanded)
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: tags.asMap().entries.map((entry) {
                     final index = entry.key;
                     final tag = entry.value;
-                    // Mencegah error "RangeError" jika warna kurang
                     final color = (index < tagColors.length)
                         ? tagColors[index]
                         : Colors.grey;
@@ -519,14 +537,12 @@ class AdminCourseCard extends StatelessWidget {
                   }).toList(),
                 ),
                 const SizedBox(height: 8),
-
-                // Harga
                 Text(
                   price,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: lsGreen, // Menggunakan konstanta lsGreen dari atas
+                    color: Color(0xFF0DA680),
                   ),
                 ),
               ],
@@ -534,36 +550,23 @@ class AdminCourseCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // 3. MENU AKSI (Titik Tiga)
+          // 3. MENU AKSI
           PopupMenuButton<String>(
-            padding: EdgeInsets.zero, // Hilangkan padding bawaan biar rapi
-            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
             onSelected: (value) {
-              if (value == 'edit') {
-                onEdit();
-              } else if (value == 'delete') {
-                onDelete();
-              }
+              if (value == 'edit') onEdit();
+              if (value == 'delete') onDelete();
             },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
                 value: 'edit',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.edit_outlined, size: 20),
-                  title: Text('Edit'),
-                ),
+                child: ListTile(leading: Icon(Icons.edit), title: Text('Edit')),
               ),
-              const PopupMenuItem<String>(
+              const PopupMenuItem(
                 value: 'delete',
                 child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.delete_outline,
-                    size: 20,
-                    color: Colors.red,
-                  ),
-                  title: Text('Delete', style: TextStyle(color: Colors.red)),
+                  leading: Icon(Icons.delete, color: Colors.red),
+                  title: Text('Delete'),
                 ),
               ),
             ],

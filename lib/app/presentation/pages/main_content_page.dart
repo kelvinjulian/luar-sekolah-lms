@@ -59,10 +59,12 @@ class _MainContentPageState extends State<MainContentPage> {
               Row(
                 children: [
                   // AVATAR SINKRON
+                  //? Widget Obx ini "hidup". Dia selalu memantau AuthController.
                   Obx(() {
                     final user = authC.user;
                     final localPath = authC.localPhotoPath.value;
 
+                    //? Jika 'path' berubah, baris ini jalan ulang & gambar terganti otomatis
                     ImageProvider bgImage;
                     if (localPath != null && File(localPath).existsSync()) {
                       bgImage = FileImage(File(localPath));
